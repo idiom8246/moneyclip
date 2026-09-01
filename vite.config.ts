@@ -5,6 +5,9 @@ import tailwindcss from '@tailwindcss/vite'
 import { VitePWA } from 'vite-plugin-pwa'
 
 export default defineConfig({
+  // GitHub Pages serves the app under /moneyclip/ — assets, manifest, and
+  // service-worker scope all derive from this base.
+  base: '/moneyclip/',
   plugins: [
     react(),
     tailwindcss(),

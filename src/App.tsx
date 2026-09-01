@@ -1,4 +1,4 @@
-import { BrowserRouter, Route, Routes } from 'react-router-dom'
+import { HashRouter, Route, Routes } from 'react-router-dom'
 import { BottomNav } from './components/BottomNav'
 import { OfflineBanner } from './components/OfflineBanner'
 import { CollectionPage } from './pages/CollectionPage'
@@ -9,7 +9,7 @@ import { SettingsPage } from './pages/SettingsPage'
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <HashRouter>
       <div className="mx-auto flex h-full max-w-md flex-col bg-paper text-ink dark:bg-dusk dark:text-dusk-ink">
         <OfflineBanner />
         <main className="flex-1 overflow-y-auto pb-24">
@@ -24,6 +24,6 @@ export default function App() {
         </main>
         <BottomNav />
       </div>
-    </BrowserRouter>
+    </HashRouter>
   )
 }
