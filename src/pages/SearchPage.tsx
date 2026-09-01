@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
 import { RecordCard } from '../components/RecordCard'
 import { Chip, Field, fieldClass } from '../components/ui'
-import { IconSearch } from '../components/icons'
+import { IconSearch, IconSettings } from '../components/icons'
 import {
   useCategories, usePagedList, useRecentSearches, useRecords, useSetSearchParam, useSetting,
 } from '../hooks'
@@ -62,7 +62,16 @@ export function SearchPage() {
 
   return (
     <div className="px-4">
-      <h1 className="py-4 text-2xl font-bold">{t('search.title')}</h1>
+      <header className="flex min-h-14 items-center justify-between py-2">
+        <h1 className="text-2xl font-bold tracking-tight">{t('search.title')}</h1>
+        <Link
+          to="/settings"
+          aria-label={t('settings.title')}
+          className="flex h-11 w-11 items-center justify-center rounded-full text-ink-soft hover:bg-terracotta-soft/60 dark:text-dusk-soft dark:hover:bg-dusk-line/60"
+        >
+          <IconSettings />
+        </Link>
+      </header>
 
       <div className="relative">
         <IconSearch className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-soft dark:text-dusk-soft" />
@@ -100,10 +109,10 @@ export function SearchPage() {
       </div>
 
       <div className="mt-3 grid grid-cols-2 gap-3">
-        <Field label={t('search.dateFrom')}>
+        <Field label={t('search.dateFrom')} className="min-w-0">
           <input type="date" value={dateFrom ?? ''} onChange={(e) => setParam('from', e.target.value || null)} className={fieldClass} />
         </Field>
-        <Field label={t('search.dateTo')}>
+        <Field label={t('search.dateTo')} className="min-w-0">
           <input type="date" value={dateTo ?? ''} onChange={(e) => setParam('to', e.target.value || null)} className={fieldClass} />
         </Field>
       </div>

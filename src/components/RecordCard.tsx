@@ -51,7 +51,7 @@ export function RecordCard({
         <div className="flex items-start justify-between gap-2">
           <h3 className="truncate text-lg font-semibold leading-6">{record.title}</h3>
           {price !== undefined && (
-            <span className="shrink-0 text-sm font-semibold text-ink-soft dark:text-dusk-soft">
+            <span className="shrink-0 text-sm font-semibold tabular-nums text-ink-soft dark:text-dusk-soft">
               {formatMoney(price, record.currency ?? defaultCurrency, i18n.language)}
             </span>
           )}

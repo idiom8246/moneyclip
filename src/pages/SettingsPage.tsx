@@ -2,8 +2,18 @@ import { useEffect, useRef, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
+import {
+  Coins,
+  Database,
+  FolderCog,
+  Info,
+  Languages,
+  Palette,
+  ScanText,
+  TrendingUp,
+} from 'lucide-react'
 import { useToast } from '../components/Toast'
-import { Field, GhostButton, PageHeader, fieldClass } from '../components/ui'
+import { Field, GhostButton, PageHeader, SectionCard, fieldClass } from '../components/ui'
 import { db } from '../db/db'
 import type { AppSettings } from '../db/types'
 import { useCategories, useSetting } from '../hooks'
@@ -15,14 +25,7 @@ import { getSetting, setSetting } from '../lib/settings'
 import { applyTheme } from '../theme'
 import { categoryDisplayName } from '../lib/search'
 
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <section className="rounded-2xl bg-paper-raised p-4 ring-1 ring-line dark:bg-dusk-raised dark:ring-dusk-line">
-      <h2 className="mb-3 text-sm font-semibold text-ink-soft dark:text-dusk-soft">{title}</h2>
-      {children}
-    </section>
-  )
-}
+const sectionIcon = (Icon: typeof Coins) => <Icon className="h-4 w-4" strokeWidth={1.8} aria-hidden />
 
 function ToggleRow<A extends string>({
   options, value, onChange, labels,
@@ -124,16 +127,16 @@ export function SettingsPage() {
       <PageHeader title={t('settings.title')} onBack={() => navigate(-1)} />
 
       <div className="space-y-4">
-        <Section title={t('settings.language')}>
+        <SectionCard title={t('settings.language')} icon={sectionIcon(Languages)}>
           <ToggleRow
             options={['zh-TW', 'en'] as const}
             value={locale}
             onChange={(v) => void changeLocale(v)}
             labels={(v) => (v === 'zh-TW' ? '繁體中文' : 'English')}
           />
-        </Section>
+        </SectionCard>
 
-        <Section title={t('settings.theme')}>
+        <SectionCard title={t('settings.theme')} icon={sectionIcon(Palette)}>
           <ToggleRow
             options={['system', 'light', 'dark'] as const}
             value={theme}
@@ -142,9 +145,9 @@ export function SettingsPage() {
               v === 'system' ? t('settings.themeSystem') : v === 'light' ? t('settings.themeLight') : t('settings.themeDark')
             }
           />
-        </Section>
+        </SectionCard>
 
-        <Section title={t('settings.defaultCurrency')}>
+        <SectionCard title={t('settings.defaultCurrency')} icon={sectionIcon(Coins)}>
           <div className="flex gap-3">
             <select
               value={!customOpen && isCommonCurrency(defaultCurrency) ? defaultCurrency : 'CUSTOM'}
@@ -181,9 +184,9 @@ export function SettingsPage() {
               />
             )}
           </div>
-        </Section>
+        </SectionCard>
 
-        <Section title={t('settings.rates')}>
+        <SectionCard title={t('settings.rates')} icon={sectionIcon(TrendingUp)}>
           {rateCacheRows.length === 0 ? (
             <p className="mb-2 text-xs text-ink-soft dark:text-dusk-soft">{t('settings.ratesNever')}</p>
           ) : (
@@ -201,14 +204,14 @@ export function SettingsPage() {
             {t('settings.ratesRefresh')}
           </GhostButton>
           <div className="flex items-end gap-2">
-            <Field label={t('settings.manualRate', { base: defaultCurrency })}>
+            <Field label={t('settings.manualRate', { base: defaultCurrency })} className="min-w-0 flex-1">
               <div className="flex gap-2">
                 <input
                   value={manualBase}
                   onChange={(e) => setManualBase(e.target.value.toUpperCase())}
                   placeholder="JPY"
                   maxLength={3}
-                  className={`${fieldClass} w-20`}
+                  className={`${fieldClass} max-w-20 shrink-0`}
                   aria-label="Currency"
                 />
                 <input
@@ -221,7 +224,9 @@ export function SettingsPage() {
                 />
               </div>
             </Field>
-            <GhostButton onClick={() => void saveManualRate()}>{t('common.save')}</GhostButton>
+            <GhostButton onClick={() => void saveManualRate()} className="shrink-0 whitespace-nowrap">
+              {t('common.save')}
+            </GhostButton>
           </div>
           {Object.keys(manualRates).length > 0 && (
             <ul className="mt-2 text-xs text-ink-soft dark:text-dusk-soft">
@@ -230,9 +235,9 @@ export function SettingsPage() {
               ))}
             </ul>
           )}
-        </Section>
+        </SectionCard>
 
-        <Section title={t('settings.ocr')}>
+        <SectionCard title={t('settings.ocr')} icon={sectionIcon(ScanText)}>
           <p className="mb-3 text-xs text-ink-soft dark:text-dusk-soft">{t('settings.ocrHint')}</p>
           <div className="space-y-3">
             <Field label={t('settings.ocrBaseUrl')}>
@@ -271,9 +276,9 @@ export function SettingsPage() {
               {t('common.save')}
             </GhostButton>
           </div>
-        </Section>
+        </SectionCard>
 
-        <Section title={t('settings.categories')}>
+        <SectionCard title={t('settings.categories')} icon={sectionIcon(FolderCog)}>
           <ul className="mb-3 space-y-1">
             {categories.map((c) => {
               const label = categoryDisplayName(c, i18n.language)
@@ -321,9 +326,9 @@ export function SettingsPage() {
               {t('common.add')}
             </GhostButton>
           </div>
-        </Section>
+        </SectionCard>
 
-        <Section title={t('settings.data')}>
+        <SectionCard title={t('settings.data')} icon={sectionIcon(Database)}>
           <div className="grid gap-2">
             <GhostButton onClick={() => void downloadBundle(true)}>
               {t('settings.exportJson')}
@@ -356,11 +361,11 @@ export function SettingsPage() {
               }}
             />
           </div>
-        </Section>
+        </SectionCard>
 
-        <Section title={t('settings.about')}>
+        <SectionCard title={t('settings.about')} icon={sectionIcon(Info)}>
           <p className="text-sm text-ink-soft dark:text-dusk-soft">{t('settings.aboutBody')}</p>
-        </Section>
+        </SectionCard>
       </div>
     </div>
   )

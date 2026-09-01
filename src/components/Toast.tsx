@@ -24,12 +24,12 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastCtx.Provider value={show}>
       {children}
-      <div className="pointer-events-none fixed inset-x-0 bottom-24 z-50 flex flex-col items-center gap-2 px-6">
+      <div className="pointer-events-none fixed inset-x-0 bottom-[max(6.5rem,calc(env(safe-area-inset-bottom)+5.5rem))] z-50 flex flex-col items-center gap-2 px-6">
         {toasts.map((t) => (
           <div
             key={t.id}
             role="status"
-            className="rounded-xl bg-ink px-4 py-2.5 text-sm text-paper shadow-lg dark:bg-paper dark:text-ink"
+            className="animate-toast-in max-w-full rounded-full bg-ink/95 px-4 py-2.5 text-center text-sm font-medium text-paper shadow-xl shadow-ink/20 ring-1 ring-white/10 backdrop-blur dark:bg-paper/95 dark:text-ink dark:shadow-black/40"
           >
             {t.text}
           </div>

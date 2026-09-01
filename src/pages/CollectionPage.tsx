@@ -5,6 +5,7 @@ import { InsightsBlock } from '../components/InsightsBlock'
 import { RecordCard } from '../components/RecordCard'
 import { Chip } from '../components/ui'
 import { IconSettings } from '../components/icons'
+import { ReceiptText } from 'lucide-react'
 import { useAllTags, useCategories, usePagedList, useRecords, useSetSearchParam, useSetting } from '../hooks'
 import { searchRecords, categoryDisplayName, type SortKey } from '../lib/search'
 import { SAVE_REASONS, type SaveReason } from '../db/types'
@@ -114,11 +115,14 @@ export function CollectionPage() {
       <div className="mt-4 space-y-3">
         {records && visible.length === 0 && records.length === 0 ? (
           <div className="flex flex-col items-center gap-6 px-6 py-20 text-center">
+            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-terracotta-soft text-terracotta dark:bg-dusk-line/60 dark:text-dusk-ink">
+              <ReceiptText className="h-9 w-9" strokeWidth={1.6} aria-hidden />
+            </div>
             <p className="text-lg text-ink-soft dark:text-dusk-soft">{t('collection.empty')}</p>
             <button
               type="button"
               onClick={() => navigate('/add')}
-              className="min-h-12 rounded-2xl bg-terracotta px-6 py-3 font-semibold text-paper shadow-lg shadow-terracotta/25 transition-transform active:scale-95"
+              className="min-h-12 rounded-2xl bg-gradient-to-b from-terracotta to-terracotta-deep px-6 py-3 font-semibold text-paper shadow-lg shadow-terracotta/25 transition-transform active:scale-95 hover:brightness-105"
             >
               {t('collection.emptyCta')}
             </button>

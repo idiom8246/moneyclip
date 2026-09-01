@@ -10,9 +10,9 @@ import { SettingsPage } from './pages/SettingsPage'
 export default function App() {
   return (
     <HashRouter>
-      <div className="mx-auto flex h-full max-w-md flex-col bg-paper text-ink dark:bg-dusk dark:text-dusk-ink">
+      <div className="mx-auto flex h-full max-w-md flex-col bg-paper pt-[env(safe-area-inset-top)] text-ink dark:bg-dusk dark:text-dusk-ink">
         <OfflineBanner />
-        <main className="flex-1 overflow-y-auto pb-24">
+        <main className="flex-1 overflow-y-auto pb-32">
           <Routes>
             <Route path="/" element={<CollectionPage />} />
             <Route path="/add" element={<RecordFormPage />} />

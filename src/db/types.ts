@@ -35,7 +35,7 @@ export interface ConsumptionRecord {
   title: string
   /** Amount in original currency; optional by design (item-first, not amount-first). */
   price?: number
-  /** ISO 4217, e.g. TWD, JPY. */
+  /** ISO 4217, e.g. HKD, JPY. */
   currency?: string
   /** ISO yyyy-mm-dd. */
   date?: string
@@ -94,7 +94,9 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
-  defaultCurrency: 'TWD',
+  // HKD is the shipped default for HK-based users. Existing users keep their
+  // stored setting — getSetting() prefers the settings table over this value.
+  defaultCurrency: 'HKD',
   locale: 'zh-TW',
   theme: 'system',
   ocrConfig: { baseUrl: '', apiKey: '', model: '' },

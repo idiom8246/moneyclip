@@ -46,7 +46,7 @@ export function InsightsBlock({
           {t('collection.insights.thisMonth')}
         </span>
         <span className="flex items-center gap-2">
-          <strong className="text-2xl font-bold tracking-tight">
+          <strong className="text-2xl font-bold tracking-tight tabular-nums">
             {formatMoney(Math.round(insight.total), defaultCurrency, i18n.language)}
           </strong>
           <IconChevronDown className={`h-4 w-4 text-ink-soft transition-transform dark:text-dusk-soft ${open ? 'rotate-180' : ''}`} />

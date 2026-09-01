@@ -97,7 +97,7 @@ export function RecordDetailPage() {
         </div>
         {price !== undefined && (
           <div className="text-right">
-            <p className="text-xl font-bold">{formatMoney(price, currency, i18n.language)}</p>
+            <p className="text-xl font-bold tabular-nums">{formatMoney(price, currency, i18n.language)}</p>
             {converted !== null ? (
               <p className="text-sm text-ink-soft dark:text-dusk-soft">
                 {t('detail.approxConverted', { amount: formatMoney(Math.round(converted), defaultCurrency, i18n.language) })}
@@ -172,7 +172,7 @@ export function RecordDetailPage() {
       <div className="mt-6 grid grid-cols-2 gap-3">
         <Link
           to={`/record/${record.id}/edit`}
-          className="flex min-h-12 items-center justify-center rounded-xl bg-terracotta px-4 py-2.5 font-semibold text-paper"
+          className="flex min-h-12 items-center justify-center rounded-xl bg-gradient-to-b from-terracotta to-terracotta-deep px-4 py-2.5 font-semibold text-paper shadow-md shadow-terracotta/25 transition-all hover:brightness-105 active:scale-[0.98]"
         >
           {t('common.edit')}
         </Link>
@@ -180,7 +180,7 @@ export function RecordDetailPage() {
           type="button"
           onClick={() => void toggleFavorite(record.id)}
           aria-pressed={record.favorite}
-          className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-line px-4 py-2.5 dark:border-dusk-line"
+          className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-line px-4 py-2.5 transition-all active:scale-[0.98] dark:border-dusk-line"
         >
           <IconStar filled={record.favorite} className={record.favorite ? 'h-5 w-5 text-terracotta' : 'h-5 w-5'} />
           {t('collection.favorites')}
@@ -188,7 +188,7 @@ export function RecordDetailPage() {
         <button
           type="button"
           onClick={() => void setArchived(record.id, record.status !== 'archived')}
-          className="flex min-h-12 items-center justify-center rounded-xl border border-line px-4 py-2.5 dark:border-dusk-line"
+          className="flex min-h-12 items-center justify-center rounded-xl border border-line px-4 py-2.5 transition-all active:scale-[0.98] dark:border-dusk-line"
         >
           {record.status === 'archived' ? t('detail.unarchive') : t('detail.archive')}
         </button>
