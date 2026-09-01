@@ -1,9 +1,9 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import type { Category, ConsumptionRecord } from '../db/types'
-import { computeMonthInsight, formatMoney } from '../lib/currency'
+import { computeMonthInsight, formatMoney, TRIP_TAG_PREFIX } from '../lib/currency'
 import { categoryDisplayName } from '../lib/search'
-import { useRates, useSetting } from '../hooks'
+import { useRateSource, useSetting } from '../hooks'
 import { IconChevronDown } from './icons'
 
 /**
@@ -21,17 +21,13 @@ export function InsightsBlock({
   const { t, i18n } = useTranslation()
   const [open, setOpen] = useState(true)
   const defaultCurrency = useSetting('defaultCurrency')
-  const manualRates = useSetting('manualRates')
-  const rateCache = useRates(defaultCurrency)
-
-  const month = new Date().toISOString().slice(0, 7)
+  const rateSource = useRateSource()
+  // Local calendar month (record dates are local yyyy-mm-dd, spec §5.1 本月).
+  const now = new Date()
+  const month = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`
   const insight = useMemo(
-    () =>
-      computeMonthInsight(records, month, defaultCurrency, {
-        manualRates,
-        cache: rateCache ?? null,
-      }),
-    [records, month, defaultCurrency, manualRates, rateCache],
+    () => computeMonthInsight(records, month, defaultCurrency, rateSource),
+    [records, month, defaultCurrency, rateSource],
   )
 
   const hasContent =
@@ -67,10 +63,10 @@ export function InsightsBlock({
               {insight.hadUnconverted && ` (${t('common.unconverted')})`}
             </p>
           )}
-          {rateCache && (
+          {rateSource.cache && (
             <p className="text-xs text-ink-soft/70 dark:text-dusk-soft/70">
               {t('collection.insights.ratesAsOf', {
-                date: new Date(rateCache.fetchedAt).toISOString().slice(0, 10),
+                date: new Date(rateSource.cache.fetchedAt).toISOString().slice(0, 10),
               })}
             </p>
           )}
@@ -117,7 +113,7 @@ export function InsightsBlock({
                     onClick={() => onTripClick(tag)}
                     className="rounded-full bg-terracotta-soft px-3 py-1 text-xs text-terracotta-deep dark:bg-dusk-line dark:text-dusk-ink"
                   >
-                    {tag.replace(/^trip:/, '')} · {formatMoney(Math.round(total), defaultCurrency, i18n.language)}
+                    {tag.replace(new RegExp(`^${TRIP_TAG_PREFIX}`), '')} · {formatMoney(Math.round(total), defaultCurrency, i18n.language)}
                   </button>
                 ))}
               </div>

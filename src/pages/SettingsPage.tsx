@@ -7,16 +7,13 @@ import { Field, GhostButton, PageHeader, fieldClass } from '../components/ui'
 import { db } from '../db/db'
 import type { AppSettings } from '../db/types'
 import { useCategories, useSetting } from '../hooks'
-import { addCategory, deleteCategory } from '../lib/records'
-import { COMMON_CURRENCIES } from '../lib/currency'
+import { addCategory, deleteCategory, renameCategory } from '../lib/records'
+import { COMMON_CURRENCIES, isCommonCurrency } from '../lib/currency'
 import { downloadTextFile, exportCSV, exportJSON, importJSON } from '../lib/exportImport'
 import { fetchRates } from '../lib/rates'
 import { getSetting, setSetting } from '../lib/settings'
 import { applyTheme } from '../theme'
-
-function useRatesEntry(base: string) {
-  return useLiveQuery(() => db.rateCache.get(base), [base])
-}
+import { categoryDisplayName } from '../lib/search'
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -71,7 +68,8 @@ export function SettingsPage() {
   const [ocrForm, setOcrForm] = useState(ocrConfig)
   const [manualBase, setManualBase] = useState('JPY')
   const [manualValue, setManualValue] = useState('')
-  const rateEntry = useRatesEntry(defaultCurrency)
+  const [customOpen, setCustomOpen] = useState(false)
+  const rateCacheRows = useLiveQuery(() => db.rateCache.toArray(), []) ?? []
   const [newCat, setNewCat] = useState('')
   const fileInput = useRef<HTMLInputElement>(null)
 
@@ -97,11 +95,18 @@ export function SettingsPage() {
 
   const saveManualRate = async () => {
     const val = Number(manualValue)
-    if (!manualBase || !Number.isFinite(val) || val <= 0) return
+    if (!manualBase.trim() || !Number.isFinite(val) || val <= 0) return
     const next = { ...(await getSetting('manualRates')), [manualBase.toUpperCase()]: val }
-    if (manualValue === '0') delete next[manualBase.toUpperCase()]
     await setSetting('manualRates', next)
     setManualValue('')
+  }
+
+  const downloadBundle = async (includeImages: boolean) => {
+    const bundle = await exportJSON(db, { includeImages })
+    downloadTextFile(
+      `moneyclip-${new Date().toISOString().slice(0, 10)}.json`,
+      JSON.stringify(bundle),
+    )
   }
 
   const doImport = async (file: File) => {
@@ -142,9 +147,13 @@ export function SettingsPage() {
         <Section title={t('settings.defaultCurrency')}>
           <div className="flex gap-3">
             <select
-              value={COMMON_CURRENCIES.includes(defaultCurrency as never) ? defaultCurrency : 'CUSTOM'}
+              value={!customOpen && isCommonCurrency(defaultCurrency) ? defaultCurrency : 'CUSTOM'}
               onChange={(e) => {
-                if (e.target.value !== 'CUSTOM') void setSetting('defaultCurrency', e.target.value)
+                if (e.target.value === 'CUSTOM') setCustomOpen(true)
+                else {
+                  setCustomOpen(false)
+                  void setSetting('defaultCurrency', e.target.value)
+                }
               }}
               className={fieldClass}
               aria-label={t('settings.defaultCurrency')}
@@ -154,15 +163,20 @@ export function SettingsPage() {
               ))}
               <option value="CUSTOM">{t('settings.customCurrency')}</option>
             </select>
-            {!COMMON_CURRENCIES.includes(defaultCurrency as never) && (
+            {customOpen && (
               <input
-                defaultValue={defaultCurrency}
+                defaultValue={isCommonCurrency(defaultCurrency) ? '' : defaultCurrency}
+                placeholder="USD"
                 onBlur={(e) => {
                   const v = e.target.value.trim().toUpperCase()
-                  if (/^[A-Z]{3}$/.test(v)) void setSetting('defaultCurrency', v)
+                  if (/^[A-Z]{3}$/.test(v)) {
+                    void setSetting('defaultCurrency', v)
+                    setCustomOpen(false)
+                  }
                 }}
                 className={fieldClass}
                 maxLength={3}
+                autoFocus
                 aria-label={t('settings.customCurrency')}
               />
             )}
@@ -170,11 +184,19 @@ export function SettingsPage() {
         </Section>
 
         <Section title={t('settings.rates')}>
-          <p className="mb-2 text-xs text-ink-soft dark:text-dusk-soft">
-            {rateEntry
-              ? t('settings.ratesUpdated', { date: new Date(rateEntry.fetchedAt).toISOString().slice(0, 10) })
-              : t('settings.ratesNever')}
-          </p>
+          {rateCacheRows.length === 0 ? (
+            <p className="mb-2 text-xs text-ink-soft dark:text-dusk-soft">{t('settings.ratesNever')}</p>
+          ) : (
+            <ul className="mb-2 text-xs text-ink-soft dark:text-dusk-soft">
+              {rateCacheRows.map((row) => (
+                <li key={row.base}>
+                  {t('settings.ratesCacheBase', { base: row.base })} ·{' '}
+                  {t('settings.ratesUpdated', { date: new Date(row.fetchedAt).toISOString().slice(0, 10) })}
+                  {Object.keys(row.rates).length > 0 && ` (${Object.keys(row.rates).length})`}
+                </li>
+              ))}
+            </ul>
+          )}
           <GhostButton onClick={() => void refreshRates()} className="mb-4 w-full">
             {t('settings.ratesRefresh')}
           </GhostButton>
@@ -253,22 +275,35 @@ export function SettingsPage() {
 
         <Section title={t('settings.categories')}>
           <ul className="mb-3 space-y-1">
-            {categories.map((c) => (
-              <li key={c.id} className="flex min-h-11 items-center justify-between gap-2">
-                <span>{c.icon} {locale === 'en' ? (c.nameEn ?? c.name) : c.name}</span>
-                <GhostButton
-                  className="min-h-9 px-3 py-1 text-xs"
-                  onClick={() => {
-                    const label = locale === 'en' ? (c.nameEn ?? c.name) : c.name
-                    if (window.confirm(t('settings.deleteCategoryConfirm', { name: label }))) {
-                      void deleteCategory(c.id)
-                    }
-                  }}
-                >
-                  {t('common.delete')}
-                </GhostButton>
-              </li>
-            ))}
+            {categories.map((c) => {
+              const label = categoryDisplayName(c, i18n.language)
+              return (
+                <li key={c.id} className="flex min-h-11 items-center justify-between gap-2">
+                  <span>{c.icon} {label}</span>
+                  <span className="flex gap-1">
+                    <GhostButton
+                      className="min-h-9 px-3 py-1 text-xs"
+                      onClick={() => {
+                        const name = window.prompt(t('settings.categoryName'), label)?.trim()
+                        if (name) void renameCategory(c.id, name)
+                      }}
+                    >
+                      {t('settings.renameCategory')}
+                    </GhostButton>
+                    <GhostButton
+                      className="min-h-9 px-3 py-1 text-xs"
+                      onClick={() => {
+                        if (window.confirm(t('settings.deleteCategoryConfirm', { name: label }))) {
+                          void deleteCategory(c.id)
+                        }
+                      }}
+                    >
+                      {t('common.delete')}
+                    </GhostButton>
+                  </span>
+                </li>
+              )
+            })}
           </ul>
           <div className="flex gap-2">
             <input
@@ -290,18 +325,10 @@ export function SettingsPage() {
 
         <Section title={t('settings.data')}>
           <div className="grid gap-2">
-            <GhostButton
-              onClick={() => void exportJSON(db, { includeImages: true }).then((b) =>
-                downloadTextFile(`moneyclip-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(b)),
-              )}
-            >
+            <GhostButton onClick={() => void downloadBundle(true)}>
               {t('settings.exportJson')}
             </GhostButton>
-            <GhostButton
-              onClick={() => void exportJSON(db).then((b) =>
-                downloadTextFile(`moneyclip-${new Date().toISOString().slice(0, 10)}.json`, JSON.stringify(b)),
-              )}
-            >
+            <GhostButton onClick={() => void downloadBundle(false)}>
               {t('settings.exportJsonNoImages')}
             </GhostButton>
             <GhostButton

@@ -3,11 +3,13 @@ import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { PageHeader } from '../components/ui'
 import { IconStar, IconTrash } from '../components/icons'
-import { useAttachments, useCategories, useRates, useRecord, useSetting } from '../hooks'
+import { useAttachments, useCategories, useRateSource, useRecord, useSetting } from '../hooks'
 import { convert, formatMoney } from '../lib/currency'
+import { joinMerchantDate } from '../lib/format'
 import { blobUrl, releaseBlobUrl } from '../lib/images'
 import { deleteRecord, effectivePrice, setArchived, toggleFavorite } from '../lib/records'
 import { categoryDisplayName } from '../lib/search'
+import { getSetting, setSetting } from '../lib/settings'
 
 export function RecordDetailPage() {
   const { t, i18n } = useTranslation()
@@ -17,11 +19,21 @@ export function RecordDetailPage() {
   const categories = useCategories() ?? []
   const attachments = useAttachments(id)
   const defaultCurrency = useSetting('defaultCurrency')
-  const manualRates = useSetting('manualRates')
-  const rateCache = useRates(defaultCurrency)
+  const rateSource = useRateSource()
   const [confirmingDelete, setConfirmingDelete] = useState(false)
   const [lightbox, setLightbox] = useState<string | null>(null)
   const [thumbs, setThumbs] = useState<string[]>([])
+
+  // Spec §5.4: track recently viewed records.
+  const recordId = record?.id
+  useEffect(() => {
+    if (!recordId) return
+    void (async () => {
+      const prev = await getSetting('recentViewed')
+      const next = [recordId, ...prev.filter((x) => x !== recordId)].slice(0, 8)
+      await setSetting('recentViewed', next)
+    })()
+  }, [recordId])
 
   useEffect(() => {
     if (!attachments) return
@@ -36,8 +48,8 @@ export function RecordDetailPage() {
   const converted = useMemo(() => {
     if (!record || price === undefined) return null
     if (currency.toUpperCase() === defaultCurrency.toUpperCase()) return null
-    return convert(price, currency, defaultCurrency, { manualRates, cache: rateCache ?? null })
-  }, [record, price, currency, defaultCurrency, manualRates, rateCache])
+    return convert(price, currency, defaultCurrency, rateSource)
+  }, [record, price, currency, defaultCurrency, rateSource])
 
   if (record === undefined) return null
   const category = categories.find((c) => c.id === record.categoryId)
@@ -98,7 +110,7 @@ export function RecordDetailPage() {
       </div>
 
       <p className="mt-1 text-sm text-ink-soft dark:text-dusk-soft">
-        {[record.merchant, record.date].filter(Boolean).join(' · ')}
+        {joinMerchantDate(record)}
       </p>
 
       <div className="mt-3 flex flex-wrap gap-2 text-sm">

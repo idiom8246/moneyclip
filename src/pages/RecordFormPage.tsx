@@ -19,7 +19,7 @@ import {
 } from '../lib/records'
 import { categoryDisplayName } from '../lib/search'
 import { uid } from '../lib/uid'
-import { COMMON_CURRENCIES } from '../lib/currency'
+import { COMMON_CURRENCIES, isCommonCurrency } from '../lib/currency'
 import { SAVE_REASONS, type RecordItem, type SaveReason } from '../db/types'
 import { db } from '../db/db'
 
@@ -64,12 +64,20 @@ export function RecordFormPage() {
   const [titleError, setTitleError] = useState(false)
   const fileInput = useRef<HTMLInputElement>(null)
   const [hydrated, setHydrated] = useState(false)
+  // Tracks manual price edits so the items auto-sum can pre-fill without
+  // fighting the user (spec §4: 自動加總,仍可手動覆寫).
+  const priceTouched = useRef(false)
+
+  const updateItem = (itemId: string, patch: Partial<RecordItem>) =>
+    setItems((prev) => prev.map((x) => (x.id === itemId ? { ...x, ...patch } : x)))
 
   // Edit mode: hydrate once when the record arrives.
   useEffect(() => {
     if (!isEdit || hydrated || !existing) return
     setTitle(existing.title)
     setPrice(existing.price !== undefined ? String(existing.price) : '')
+    // A stored price is user data — don't let auto-sum clobber it.
+    priceTouched.current = existing.price !== undefined
     setCurrency(existing.currency ?? defaultCurrency)
     setDate(existing.date ?? '')
     setMerchant(existing.merchant ?? '')
@@ -108,6 +116,11 @@ export function RecordFormPage() {
   )
 
   const autoTotal = useMemo(() => itemsAutoTotal(items), [items])
+
+  // Auto-sum pre-fill: only while the user hasn't hand-edited the price.
+  useEffect(() => {
+    if (autoTotal !== undefined && !priceTouched.current) setPrice(String(autoTotal))
+  }, [autoTotal])
 
   const onPickFiles = async (e: ChangeEvent<HTMLInputElement>) => {
     const files = Array.from(e.target.files ?? [])
@@ -166,8 +179,14 @@ export function RecordFormPage() {
       // Only fill fields the user hasn't touched (spec §6.2 — never overwrite).
       if (!merchant && receipt.merchant) setMerchant(receipt.merchant)
       if (!date && receipt.date) setDate(receipt.date)
-      if (!price && receipt.total !== undefined) setPrice(String(receipt.total))
-      if (receipt.currency) setCurrency(receipt.currency)
+      const fillsTotal = !price && !priceTouched.current && receipt.total !== undefined
+      if (fillsTotal) {
+        setPrice(String(receipt.total))
+        priceTouched.current = true
+      }
+      // Currency rides along only when we filled the total (its currency),
+      // never overwriting a user-entered amount's currency.
+      if (receipt.currency && fillsTotal) setCurrency(receipt.currency)
       if (receipt.items?.length && items.length === 0) {
         setItems(receipt.items.map((i) => ({ id: uid(), ...i })))
         setItemsOpen(true)
@@ -299,7 +318,10 @@ export function RecordFormPage() {
           <Field label={t('form.price')}>
             <input
               value={price}
-              onChange={(e) => setPrice(e.target.value)}
+              onChange={(e) => {
+                setPrice(e.target.value)
+                priceTouched.current = true
+              }}
               inputMode="decimal"
               placeholder={autoTotal !== undefined ? String(autoTotal) : undefined}
               className={fieldClass}
@@ -310,7 +332,7 @@ export function RecordFormPage() {
               {COMMON_CURRENCIES.map((c) => (
                 <option key={c} value={c}>{c}</option>
               ))}
-              {!COMMON_CURRENCIES.includes(currency as never) && currency && (
+              {!isCommonCurrency(currency) && currency && (
                 <option value={currency}>{currency}</option>
               )}
             </select>
@@ -396,9 +418,7 @@ export function RecordFormPage() {
                   <div className="flex items-center gap-2">
                     <input
                       value={item.name}
-                      onChange={(e) =>
-                        setItems((prev) => prev.map((x) => (x.id === item.id ? { ...x, name: e.target.value } : x)))
-                      }
+                      onChange={(e) => updateItem(item.id, { name: e.target.value })}
                       placeholder={t('form.itemName')}
                       aria-label={t('form.itemName')}
                       className={`${fieldClass} min-h-10 text-sm`}
@@ -415,9 +435,7 @@ export function RecordFormPage() {
                   <div className="mt-2 grid grid-cols-3 gap-2">
                     <input
                       value={item.qty ?? ''}
-                      onChange={(e) =>
-                        setItems((prev) => prev.map((x) => (x.id === item.id ? { ...x, qty: e.target.value ? Number(e.target.value) : undefined } : x)))
-                      }
+                      onChange={(e) => updateItem(item.id, { qty: e.target.value ? Number(e.target.value) : undefined })}
                       placeholder={t('form.qty')}
                       inputMode="numeric"
                       aria-label={t('form.qty')}
@@ -425,9 +443,7 @@ export function RecordFormPage() {
                     />
                     <input
                       value={item.unitPrice ?? ''}
-                      onChange={(e) =>
-                        setItems((prev) => prev.map((x) => (x.id === item.id ? { ...x, unitPrice: e.target.value ? Number(e.target.value) : undefined } : x)))
-                      }
+                      onChange={(e) => updateItem(item.id, { unitPrice: e.target.value ? Number(e.target.value) : undefined })}
                       placeholder={t('form.unitPrice')}
                       inputMode="decimal"
                       aria-label={t('form.unitPrice')}
@@ -435,9 +451,7 @@ export function RecordFormPage() {
                     />
                     <input
                       value={item.barcode ?? ''}
-                      onChange={(e) =>
-                        setItems((prev) => prev.map((x) => (x.id === item.id ? { ...x, barcode: e.target.value || undefined } : x)))
-                      }
+                      onChange={(e) => updateItem(item.id, { barcode: e.target.value || undefined })}
                       placeholder={t('form.barcode')}
                       inputMode="numeric"
                       aria-label={t('form.barcode')}

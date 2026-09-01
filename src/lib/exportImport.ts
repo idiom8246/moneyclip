@@ -1,5 +1,4 @@
 import type {
-  Attachment,
   Category,
   ConsumptionRecord,
 } from '../db/types'
@@ -12,12 +11,21 @@ import type { MoneyclipDB } from '../db/db'
  * CSV: flat fields; items serialized; category resolved to name.
  */
 
+export interface ExportedAttachment {
+  id: string
+  recordId: string
+  createdAt: number
+  blobBase64?: string
+  thumbBase64?: string
+}
+
 export interface ExportBundle {
   version: 1
   exportedAt: string
   records: ConsumptionRecord[]
   categories: Category[]
-  attachments?: Array<Omit<Attachment, 'blob' | 'thumbBlob'> & { blobBase64?: string; thumbBase64?: string }>
+  /** Attachment metadata is always included; image bytes only when requested (spec §5.6). */
+  attachments: ExportedAttachment[]
 }
 
 export async function blobToBase64(blob: Blob): Promise<string> {
@@ -52,18 +60,18 @@ export async function exportJSON(
     exportedAt: new Date().toISOString(),
     records,
     categories,
+    attachments: [],
   }
-  if (opts.includeImages) {
-    bundle.attachments = await Promise.all(
-      attachments.map(async (a) => ({
-        ...a,
-        blobBase64: await blobToBase64(a.blob),
-        thumbBase64: await blobToBase64(a.thumbBlob),
-        blob: undefined as never,
-        thumbBlob: undefined as never,
-      })),
-    )
-  }
+  bundle.attachments = await Promise.all(
+    attachments.map(async (a) => ({
+      id: a.id,
+      recordId: a.recordId,
+      createdAt: a.createdAt,
+      ...(opts.includeImages
+        ? { blobBase64: await blobToBase64(a.blob), thumbBase64: await blobToBase64(a.thumbBlob) }
+        : {}),
+    })),
+  )
   return bundle
 }
 

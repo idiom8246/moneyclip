@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useLiveQuery } from 'dexie-react-hooks'
 import { useTranslation } from 'react-i18next'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { RecordCard } from '../components/RecordCard'
 import { Chip, Field, fieldClass } from '../components/ui'
 import { IconSearch } from '../components/icons'
-import { useCategories, useRecords, useSetting } from '../hooks'
+import {
+  useCategories, usePagedList, useRecentSearches, useRecords, useSetSearchParam, useSetting,
+} from '../hooks'
 import { searchRecords, categoryDisplayName } from '../lib/search'
-import { SAVE_REASONS, type SaveReason } from '../db/types'
+import { getSetting, setSetting } from '../lib/settings'
+import { db } from '../db/db'
+import { SAVE_REASONS, type ConsumptionRecord, type SaveReason } from '../db/types'
 
 const DEBOUNCE_MS = 200
 
@@ -15,7 +20,9 @@ export function SearchPage() {
   const records = useRecords()
   const categories = useCategories() ?? []
   const defaultCurrency = useSetting('defaultCurrency')
-  const [searchParams, setSearchParams] = useSearchParams()
+  const recentSearches = useRecentSearches()
+  const [searchParams] = useSearchParams()
+  const setParam = useSetSearchParam()
 
   const [input, setInput] = useState(searchParams.get('q') ?? '')
   const [query, setQuery] = useState(input)
@@ -31,15 +38,6 @@ export function SearchPage() {
   const dateFrom = searchParams.get('from') ?? undefined
   const dateTo = searchParams.get('to') ?? undefined
 
-  const setParam = (key: string, value: string | null) => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev)
-      if (value === null || value === '') next.delete(key)
-      else next.set(key, value)
-      return next
-    }, { replace: true })
-  }
-
   const results = useMemo(
     () =>
       searchRecords(records ?? [], categories, query, {
@@ -47,9 +45,20 @@ export function SearchPage() {
       }),
     [records, categories, query, includeArchived, favoriteOnly, categoryId, saveReason, dateFrom, dateTo],
   )
+  const { visible: paged, hasMore, loadMore } = usePagedList(results)
 
   const hasFilters = includeArchived || favoriteOnly || !!categoryId || !!saveReason || !!dateFrom || !!dateTo
   const started = query.trim().length > 0 || hasFilters
+
+  /** Spec §5.4: remember successful searches (Enter or result click). */
+  const commitSearch = async (raw: string) => {
+    const q = raw.trim()
+    if (!q) return
+    const prev = await getSetting('recentSearches')
+    await setSetting('recentSearches', [q, ...prev.filter((x) => x !== q)].slice(0, 5))
+  }
+
+  const byId = useMemo(() => new Map((records ?? []).map((r) => [r.id, r])), [records])
 
   return (
     <div className="px-4">
@@ -61,6 +70,7 @@ export function SearchPage() {
           type="search"
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && void commitSearch(input)}
           placeholder={t('search.placeholder')}
           autoFocus
           aria-label={t('search.title')}
@@ -99,7 +109,27 @@ export function SearchPage() {
       </div>
 
       {!started ? (
-        <p className="px-2 py-16 text-center text-ink-soft dark:text-dusk-soft">{t('search.initial')}</p>
+        <div className="space-y-6 py-8">
+          {recentSearches.length > 0 && (
+            <section aria-label={t('search.recentSearches')}>
+              <h2 className="mb-2 text-sm font-semibold text-ink-soft dark:text-dusk-soft">
+                {t('search.recentSearches')}
+              </h2>
+              <div className="flex flex-wrap gap-2">
+                {recentSearches.map((q) => (
+                  <Chip key={q} onClick={() => setInput(q)}>#{q}</Chip>
+                ))}
+              </div>
+            </section>
+          )}
+          <section aria-label={t('search.recentViewed')}>
+            <h2 className="mb-2 text-sm font-semibold text-ink-soft dark:text-dusk-soft">
+              {t('search.recentViewed')}
+            </h2>
+            <RecentViewed byId={byId} />
+          </section>
+          <p className="px-2 pt-4 text-center text-ink-soft dark:text-dusk-soft">{t('search.initial')}</p>
+        </div>
       ) : results.length === 0 ? (
         <p className="px-6 py-16 text-center text-ink-soft dark:text-dusk-soft">{t('search.noResults')}</p>
       ) : (
@@ -107,13 +137,47 @@ export function SearchPage() {
           <p className="mt-4 text-xs text-ink-soft dark:text-dusk-soft">
             {t('search.results', { count: results.length })}
           </p>
-          <div className="mt-2 space-y-3">
-            {results.map((rec) => (
+          <div className="mt-2 space-y-3" onClick={() => void commitSearch(input)}>
+            {paged.map((rec) => (
               <RecordCard key={rec.id} record={rec} categories={categories} defaultCurrency={defaultCurrency} />
             ))}
+            {hasMore && (
+              <button
+                type="button"
+                onClick={loadMore}
+                className="min-h-11 w-full rounded-xl border border-line py-2.5 text-sm text-ink-soft dark:border-dusk-line dark:text-dusk-soft"
+              >
+                {t('collection.loadMore')}
+              </button>
+            )}
           </div>
         </>
       )}
     </div>
+  )
+}
+
+function RecentViewed({ byId }: { byId: Map<string, ConsumptionRecord> }) {
+  const viewed = useLiveQuery(() => db.settings.get('recentViewed'), [])?.value as string[] | undefined
+  if (!viewed?.length) return null
+  const rows = viewed
+    .map((id) => byId.get(id))
+    .filter((r): r is ConsumptionRecord => Boolean(r))
+    .slice(0, 5)
+  if (!rows.length) return null
+  return (
+    <ul className="space-y-1">
+      {rows.map((rec) => (
+        <li key={rec.id}>
+          <Link
+            to={`/record/${rec.id}`}
+            className="flex min-h-11 items-baseline gap-2 rounded-xl px-2 py-2 text-sm hover:bg-terracotta-soft/50 dark:hover:bg-dusk-line/50"
+          >
+            <span className="truncate text-ink dark:text-dusk-ink">{rec.title}</span>
+            <span className="shrink-0 text-xs text-ink-soft dark:text-dusk-soft">{rec.date ?? ''}</span>
+          </Link>
+        </li>
+      ))}
+    </ul>
   )
 }

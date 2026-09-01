@@ -47,6 +47,21 @@ describe('export/import', () => {
     expect(await db2.categories.count()).toBe(12)
   })
 
+  it('no-image export still carries attachment metadata (spec §5.6)', async () => {
+    const db = await freshDb()
+    const rec = await createRecord({ title: 'x' }, db)
+    await addAttachment(rec.id, new Blob(['a']), new Blob(['t']), db)
+    const slim = await exportJSON(db, { includeImages: false })
+    expect(slim.attachments).toHaveLength(1)
+    expect(slim.attachments[0].recordId).toBe(rec.id)
+    expect(slim.attachments[0].blobBase64).toBeUndefined()
+
+    const db2 = new MoneyclipDB(`import-slim-${Date.now()}`)
+    await importJSON(db2, slim)
+    expect(await db2.attachments.where('recordId').equals(rec.id).count()).toBe(0) // no bytes → no attachments
+    expect(await db2.records.count()).toBe(1)
+  })
+
   it('CSV export produces flat rows with joined tags and serialized items', async () => {
     const db = await freshDb()
     const cats = await db.categories.toArray()

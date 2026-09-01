@@ -5,14 +5,15 @@ import { InsightsBlock } from '../components/InsightsBlock'
 import { RecordCard } from '../components/RecordCard'
 import { Chip } from '../components/ui'
 import { IconSettings } from '../components/icons'
-import { useAllTags, useCategories, useRecords, useSetting } from '../hooks'
+import { useAllTags, useCategories, usePagedList, useRecords, useSetSearchParam, useSetting } from '../hooks'
 import { searchRecords, categoryDisplayName, type SortKey } from '../lib/search'
-import { SAVE_REASONS } from '../db/types'
+import { SAVE_REASONS, type SaveReason } from '../db/types'
 
 export function CollectionPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
+  const setParam = useSetSearchParam()
 
   const records = useRecords()
   const categories = useCategories() ?? []
@@ -22,28 +23,20 @@ export function CollectionPage() {
   const [sort, setSort] = useState<SortKey>('createdAt')
   const favoriteOnly = searchParams.get('fav') === '1'
   const categoryFilter = searchParams.get('cat') ?? null
-  const reasonFilter = searchParams.get('reason') ?? null
+  const reasonFilter = searchParams.get('reason') as SaveReason | null
   const tagFilter = searchParams.get('tag') ?? null
-
-  const setParam = (key: string, value: string | null) => {
-    setSearchParams((prev) => {
-      const next = new URLSearchParams(prev)
-      if (value === null) next.delete(key)
-      else next.set(key, value)
-      return next
-    }, { replace: true })
-  }
 
   const visible = useMemo(
     () =>
       searchRecords(records ?? [], categories, '', {
         favoriteOnly,
         categoryId: categoryFilter,
-        saveReason: (reasonFilter as never) ?? undefined,
+        saveReason: reasonFilter,
         tag: tagFilter,
       }, sort),
     [records, categories, sort, favoriteOnly, categoryFilter, reasonFilter, tagFilter],
   )
+  const { visible: paged, hasMore, loadMore } = usePagedList(visible)
 
   return (
     <div className="px-4 pb-4">
@@ -62,13 +55,11 @@ export function CollectionPage() {
         <InsightsBlock
           records={records ?? []}
           categories={categories}
-          onTripClick={(tag) => {
-            setSearchParams((prev) => {
-              const next = new URLSearchParams(prev)
-              next.set('tag', tag)
-              return next
-            }, { replace: true })
-          }}
+          onTripClick={(tag) => setSearchParams((prev) => {
+            const next = new URLSearchParams(prev)
+            next.set('tag', tag)
+            return next
+          }, { replace: true })}
         />
       )}
 
@@ -108,7 +99,7 @@ export function CollectionPage() {
                 value={sort}
                 onChange={(e) => setSort(e.target.value as SortKey)}
                 className="min-h-9 rounded-lg bg-transparent px-2 text-sm"
-                aria-label={t('search.title')}
+                aria-label={t('collection.sort.label')}
               >
                 <option value="createdAt">{t('collection.sort.createdAt')}</option>
                 <option value="date">{t('collection.sort.date')}</option>
@@ -133,9 +124,20 @@ export function CollectionPage() {
             </button>
           </div>
         ) : (
-          visible.map((rec) => (
-            <RecordCard key={rec.id} record={rec} categories={categories} defaultCurrency={defaultCurrency} />
-          ))
+          <>
+            {paged.map((rec) => (
+              <RecordCard key={rec.id} record={rec} categories={categories} defaultCurrency={defaultCurrency} />
+            ))}
+            {hasMore && (
+              <button
+                type="button"
+                onClick={loadMore}
+                className="min-h-11 w-full rounded-xl border border-line py-2.5 text-sm text-ink-soft dark:border-dusk-line dark:text-dusk-soft"
+              >
+                {t('collection.loadMore')}
+              </button>
+            )}
+          </>
         )}
       </div>
     </div>

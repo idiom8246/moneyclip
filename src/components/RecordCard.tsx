@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import type { Category, ConsumptionRecord } from '../db/types'
 import { formatMoney } from '../lib/currency'
+import { joinMerchantDate } from '../lib/format'
 import { effectivePrice } from '../lib/records'
 import { categoryDisplayName } from '../lib/search'
 import { useAttachments } from '../hooks'
@@ -56,7 +57,7 @@ export function RecordCard({
           )}
         </div>
         <p className="mt-0.5 truncate text-sm text-ink-soft dark:text-dusk-soft">
-          {[record.merchant, record.date].filter(Boolean).join(' · ') || '\u00A0'}
+          {joinMerchantDate(record) || '\u00A0'}
         </p>
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
           {record.favorite && <span aria-label={t('collection.favorites')} title={t('collection.favorites')}>★</span>}

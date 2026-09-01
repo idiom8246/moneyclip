@@ -6,6 +6,12 @@ export const COMMON_CURRENCIES = [
   'TWD', 'JPY', 'USD', 'EUR', 'KRW', 'CNY', 'HKD', 'GBP', 'THB', 'SGD', 'AUD', 'CAD',
 ] as const
 
+export const isCommonCurrency = (c: string): boolean =>
+  (COMMON_CURRENCIES as readonly string[]).includes(c)
+
+/** `trip:xxx` tag convention marks one trip (spec §4 tags). */
+export const TRIP_TAG_PREFIX = 'trip:'
+
 export interface RateSource {
   /** manualRates from settings — highest priority. */
   manualRates: Record<string, number>
@@ -103,7 +109,7 @@ export function computeMonthInsight(
         (byCategory.get(rec.categoryId ?? null) ?? 0) + converted,
       )
       for (const tag of rec.tags) {
-        if (tag.startsWith('trip:')) {
+        if (tag.startsWith(TRIP_TAG_PREFIX)) {
           byTrip.set(tag, (byTrip.get(tag) ?? 0) + converted)
         }
       }

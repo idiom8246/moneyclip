@@ -1,9 +1,12 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from './db/db'
 import type { Attachment, Category, ConsumptionRecord } from './db/types'
-import { useSetting } from './lib/settings'
+import { useSetting, getSetting } from './lib/settings'
 import { ensureRates } from './lib/rates'
-import { useEffect, useState } from 'react'
+import type { RateSource } from './lib/currency'
+import { useEffect, useMemo, useState } from 'react'
+import type { URLSearchParamsInit } from 'react-router-dom'
+import { useSearchParams } from 'react-router-dom'
 
 export function useRecords(): ConsumptionRecord[] | undefined {
   return useLiveQuery(() => db.records.orderBy('createdAt').reverse().toArray(), [])
@@ -49,6 +52,44 @@ export function useRates(base: string) {
     }
   }, [base])
   return entry
+}
+
+/** manualRates + rateCache bundled — the RateSource every conversion needs. */
+export function useRateSource(): RateSource {
+  const manualRates = useSetting('manualRates')
+  const defaultCurrency = useSetting('defaultCurrency')
+  const cache = useRates(defaultCurrency)
+  return useMemo(() => ({ manualRates, cache: cache ?? null }), [manualRates, cache])
+}
+
+/** Last N search queries (spec §5.4 initial screen). */
+export function useRecentSearches(): string[] {
+  return useLiveQuery(() => getSetting('recentSearches'), [], []) ?? []
+}
+
+/** Pagination for large lists (spec §8: 分頁/虛擬化). */
+export function usePagedList<T>(items: T[], pageSize = 100) {
+  const [count, setCount] = useState(pageSize)
+  useEffect(() => setCount(pageSize), [items, pageSize])
+  return {
+    visible: items.slice(0, count),
+    hasMore: items.length > count,
+    loadMore: () => setCount((c) => c + pageSize),
+  }
+}
+
+/** Shared single URL-param setter for filter chips (Collection & Search). */
+export function useSetSearchParam() {
+  const [, setSearchParams] = useSearchParams()
+  return (key: string, value: string | null, other?: URLSearchParamsInit) => {
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev)
+      if (value === null || value === '') next.delete(key)
+      else next.set(key, value)
+      return next
+    }, { replace: true })
+    void other
+  }
 }
 
 

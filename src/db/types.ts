@@ -87,6 +87,10 @@ export interface AppSettings {
   theme: 'system' | 'light' | 'dark'
   ocrConfig: OcrConfig
   manualRates: Record<string, number>
+  /** Last 5 search queries (spec §5.4 initial screen). */
+  recentSearches: string[]
+  /** Last 8 viewed record ids (spec §5.4 initial screen). */
+  recentViewed: string[]
 }
 
 export const DEFAULT_SETTINGS: AppSettings = {
@@ -95,6 +99,8 @@ export const DEFAULT_SETTINGS: AppSettings = {
   theme: 'system',
   ocrConfig: { baseUrl: '', apiKey: '', model: '' },
   manualRates: {},
+  recentSearches: [],
+  recentViewed: [],
 }
 
 export interface ProductCacheEntry {
