@@ -1,0 +1,42 @@
+@import 'tailwindcss';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-paper: #faf7f1;
+  --color-paper-raised: #fffdf9;
+  --color-ink: #292524;
+  --color-ink-soft: #78716c;
+  --color-line: #e7e0d6;
+  --color-terracotta: #c15e3c;
+  --color-terracotta-deep: #a34b2f;
+  --color-terracotta-soft: #f3e4dc;
+  --color-dusk: #1c1917;
+  --color-dusk-raised: #292524;
+  --color-dusk-ink: #e7e5e4;
+  --color-dusk-soft: #a8a29e;
+  --color-dusk-line: #44403c;
+
+  --font-sans: ui-sans-serif, system-ui, -apple-system, 'Segoe UI', 'PingFang TC',
+    'PingFang SC', 'Noto Sans TC', 'Microsoft JhengHei', sans-serif;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
+body {
+  @apply bg-paper text-ink antialiased;
+}
+
+.dark body {
+  @apply bg-dusk text-dusk-ink;
+}
+
+/* Keep focus visible for a11y */
+:focus-visible {
+  outline: 2px solid var(--color-terracotta);
+  outline-offset: 2px;
+}
