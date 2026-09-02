@@ -198,8 +198,11 @@ export function RecordFormPage() {
         setItems(receipt.items.map((i) => ({ id: uid(), ...i })))
       }
       setOcrFilled(true)
-    } catch {
-      toast(t('form.ocrFailed'))
+    } catch (err) {
+      // Spec §6.2: never lose the user's form state — surface WHY it failed
+      // (401/400/404/CORS) so config mistakes are self-diagnosable.
+      const reason = (err instanceof Error ? err.message : String(err)).slice(0, 120)
+      toast(t('form.ocrFailedReason', { reason }))
     } finally {
       setOcrBusy(false)
     }
