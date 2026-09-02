@@ -39,7 +39,7 @@ export function PageHeader({
   action?: ReactNode
 }) {
   return (
-    <header className="sticky top-0 z-30 flex min-h-14 items-center gap-2 bg-paper/85 px-2 py-2 backdrop-blur-xl dark:bg-dusk/85">
+    <header className="sticky top-0 z-30 flex min-h-14 items-center gap-2 border-b border-line/60 bg-paper/85 px-2 py-2 backdrop-blur-xl dark:border-dusk-line/60 dark:bg-dusk/85">
       {onBack && (
         <button
           type="button"
@@ -83,7 +83,7 @@ export function PrimaryButton({
 }
 
 export const fieldClass =
-  'w-full min-w-0 min-h-11 rounded-xl border border-line bg-paper-raised px-3.5 py-2.5 text-base text-ink placeholder:text-ink-soft/60 focus:border-terracotta focus:outline-none dark:border-dusk-line dark:bg-dusk-raised dark:text-dusk-ink dark:placeholder:text-dusk-soft/60'
+  'w-full min-w-0 min-h-11 rounded-xl border border-line bg-paper-raised px-3.5 py-2.5 text-base text-ink shadow-sm shadow-ink/[0.03] placeholder:text-ink-soft/60 transition-colors focus:border-terracotta focus:outline-none focus:ring-2 focus:ring-terracotta/20 dark:border-dusk-line dark:bg-dusk-raised dark:text-dusk-ink dark:placeholder:text-dusk-soft/60 dark:shadow-none'
 
 export function Field({
   label,
@@ -115,8 +115,8 @@ export function SectionCard({
   children: ReactNode
 }) {
   return (
-    <section className="rounded-2xl bg-paper-raised p-4 ring-1 ring-line dark:bg-dusk-raised dark:ring-dusk-line">
-      <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-ink-soft dark:text-dusk-soft">
+    <section className="rounded-2xl bg-paper-raised p-4 shadow-sm shadow-ink/[0.04] ring-1 ring-line dark:bg-dusk-raised dark:ring-dusk-line dark:shadow-none">
+      <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-ink-soft dark:text-dusk-soft">
         {icon && (
           <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-terracotta-soft text-terracotta dark:bg-dusk-line dark:text-dusk-ink [&>svg]:h-4 [&>svg]:w-4">
             {icon}

@@ -136,6 +136,23 @@ async function chatRequest(
   })
 }
 
+/**
+ * Map a thrown OCR error to an i18n key + detail. Network-level failures
+ * (Safari "Load failed" / Chrome "Failed to fetch") almost always mean the
+ * provider blocks browser (CORS) requests or the device is offline — say
+ * that explicitly instead of showing the raw TypeError.
+ */
+export function describeOcrError(err: unknown): { key: string; detail: string } {
+  const detail = (err instanceof Error ? err.message : String(err)).slice(0, 120)
+  if (
+    err instanceof TypeError ||
+    /failed to fetch|load failed|networkerror|cancelled|aborted/i.test(detail)
+  ) {
+    return { key: 'form.ocrNetworkError', detail }
+  }
+  return { key: 'form.ocrFailedReason', detail }
+}
+
 /** Extract the receipt JSON from a model reply that ignores "JSON only". */
 export function parseReceiptContent(content: string): ParsedReceipt {
   try {

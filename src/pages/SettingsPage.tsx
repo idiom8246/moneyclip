@@ -45,7 +45,7 @@ function ToggleRow<A extends string>({
           aria-pressed={value === opt}
           className={`min-h-11 flex-1 px-3 py-2 text-sm font-medium transition-colors ${
             value === opt
-              ? 'bg-terracotta text-paper'
+              ? 'bg-terracotta font-semibold text-paper shadow-sm shadow-terracotta/25'
               : 'bg-transparent text-ink-soft hover:bg-terracotta-soft/50 dark:text-dusk-soft dark:hover:bg-dusk-line/50'
           }`}
         >

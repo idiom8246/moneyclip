@@ -34,7 +34,7 @@ export function InsightsBlock({
     insight.total > 0 || insight.topCategories.length > 0 || insight.tripTotals.length > 0
 
   return (
-    <section className="rounded-2xl bg-paper-raised p-4 ring-1 ring-line dark:bg-dusk-raised dark:ring-dusk-line" aria-label={t('collection.insights.title')}>
+    <section className="rounded-2xl bg-paper-raised p-4 shadow-sm shadow-ink/[0.04] ring-1 ring-line dark:bg-dusk-raised dark:ring-dusk-line dark:shadow-none" aria-label={t('collection.insights.title')}>
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
@@ -42,7 +42,7 @@ export function InsightsBlock({
         aria-label={open ? t('collection.insights.collapse') : t('collection.insights.expand')}
         className="flex w-full min-h-11 items-center justify-between"
       >
-        <span className="text-sm font-semibold text-ink-soft dark:text-dusk-soft">
+        <span className="text-xs font-semibold uppercase tracking-wider text-ink-soft dark:text-dusk-soft">
           {t('collection.insights.thisMonth')}
         </span>
         <span className="flex items-center gap-2">

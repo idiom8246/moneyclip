@@ -41,12 +41,12 @@ export function CollectionPage() {
 
   return (
     <div className="px-4 pb-4">
-      <header className="flex min-h-14 items-center justify-between py-2">
+      <header className="sticky top-0 z-30 -mx-4 flex min-h-14 items-center justify-between border-b border-line/60 bg-paper/85 px-4 py-2 backdrop-blur-xl dark:border-dusk-line/60 dark:bg-dusk/85">
         <h1 className="text-2xl font-bold tracking-tight">{t('collection.title')}</h1>
         <Link
           to="/settings"
           aria-label={t('settings.title')}
-          className="flex h-11 w-11 items-center justify-center rounded-full text-ink-soft hover:bg-terracotta-soft/60 dark:text-dusk-soft dark:hover:bg-dusk-line/60"
+          className="flex h-11 w-11 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-terracotta-soft/60 active:scale-95 dark:text-dusk-soft dark:hover:bg-dusk-line/60"
         >
           <IconSettings />
         </Link>

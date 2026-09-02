@@ -36,9 +36,9 @@ export function RecordCard({
   return (
     <Link
       to={`/record/${record.id}`}
-      className="flex gap-3 rounded-2xl bg-paper-raised p-3 shadow-sm ring-1 ring-line transition-transform active:scale-[0.99] dark:bg-dusk-raised dark:ring-dusk-line"
+      className="group flex gap-3 rounded-2xl bg-paper-raised p-3 shadow-sm shadow-ink/[0.04] ring-1 ring-line transition-all hover:shadow-md hover:ring-line/80 active:scale-[0.99] dark:bg-dusk-raised dark:ring-dusk-line dark:shadow-none dark:hover:ring-dusk-line/80"
     >
-      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-terracotta-soft/50 dark:bg-dusk-line/50">
+      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-terracotta-soft/50 ring-1 ring-line/60 dark:bg-dusk-line/50 dark:ring-dusk-line/60">
         {thumb ? (
           <img src={thumb} alt="" className="h-full w-full object-cover" loading="lazy" />
         ) : (
@@ -49,20 +49,20 @@ export function RecordCard({
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
-          <h3 className="truncate text-lg font-semibold leading-6">{record.title}</h3>
+          <h3 className="truncate text-base font-semibold leading-6 tracking-tight">{record.title}</h3>
           {price !== undefined && (
-            <span className="shrink-0 text-sm font-semibold tabular-nums text-ink-soft dark:text-dusk-soft">
+            <span className="shrink-0 rounded-lg bg-paper px-1.5 py-0.5 text-sm font-semibold tabular-nums text-ink ring-1 ring-line/70 dark:bg-dusk dark:text-dusk-ink dark:ring-dusk-line">
               {formatMoney(price, record.currency ?? defaultCurrency, i18n.language)}
             </span>
           )}
         </div>
         <p className="mt-0.5 truncate text-sm text-ink-soft dark:text-dusk-soft">
-          {joinMerchantDate(record) || '\u00A0'}
+          {joinMerchantDate(record) || ' '}
         </p>
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
           {record.favorite && <span aria-label={t('collection.favorites')} title={t('collection.favorites')}>★</span>}
           {record.saveReason && (
-            <span className="rounded-full bg-terracotta-soft px-2 py-0.5 text-terracotta-deep dark:bg-dusk-line dark:text-dusk-ink">
+            <span className="rounded-full bg-terracotta-soft px-2 py-0.5 font-medium text-terracotta-deep dark:bg-dusk-line dark:text-dusk-ink">
               {t(`reasons.${record.saveReason}`)}
             </span>
           )}

@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { PageHeader } from '../components/ui'
-import { IconStar, IconTrash } from '../components/icons'
+import { IconStar, IconTrash, IconArchive } from '../components/icons'
 import { useAttachments, useCategories, useRateSource, useRecord, useSetting } from '../hooks'
 import { convert, formatMoney } from '../lib/currency'
 import { joinMerchantDate } from '../lib/format'
@@ -133,7 +133,7 @@ export function RecordDetailPage() {
 
       {record.items && record.items.length > 0 && (
         <section className="mt-5">
-          <h3 className="mb-2 text-sm font-semibold text-ink-soft dark:text-dusk-soft">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-soft dark:text-dusk-soft">
             {t('detail.items')}
           </h3>
           <table className="w-full text-sm">
@@ -141,10 +141,10 @@ export function RecordDetailPage() {
               {record.items.map((item) => (
                 <tr key={item.id} className="border-b border-line/70 last:border-0 dark:border-dusk-line/70">
                   <td className="py-2 pr-2">{item.name}</td>
-                  <td className="py-2 pr-2 text-right text-ink-soft dark:text-dusk-soft">
+                  <td className="py-2 pr-2 text-right tabular-nums text-ink-soft dark:text-dusk-soft">
                     {item.qty ?? 1} × {item.unitPrice ?? '—'}
                   </td>
-                  <td className="py-2 text-right font-medium">
+                  <td className="py-2 text-right font-medium tabular-nums">
                     {item.unitPrice !== undefined ? (item.qty ?? 1) * item.unitPrice : ''}
                   </td>
                 </tr>
@@ -156,8 +156,8 @@ export function RecordDetailPage() {
 
       {record.note && (
         <section className="mt-5">
-          <h3 className="mb-1 text-sm font-semibold text-ink-soft dark:text-dusk-soft">{t('detail.note')}</h3>
-          <p className="whitespace-pre-wrap rounded-2xl bg-paper-raised p-4 ring-1 ring-line dark:bg-dusk-raised dark:ring-dusk-line">
+          <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-ink-soft dark:text-dusk-soft">{t('detail.note')}</h3>
+          <p className="whitespace-pre-wrap rounded-2xl bg-paper-raised p-4 shadow-sm shadow-ink/[0.04] ring-1 ring-line dark:bg-dusk-raised dark:ring-dusk-line dark:shadow-none">
             {record.note}
           </p>
         </section>
@@ -180,7 +180,7 @@ export function RecordDetailPage() {
           type="button"
           onClick={() => void toggleFavorite(record.id)}
           aria-pressed={record.favorite}
-          className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-line px-4 py-2.5 transition-all active:scale-[0.98] dark:border-dusk-line"
+          className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-line bg-paper-raised px-4 py-2.5 transition-all active:scale-[0.98] dark:border-dusk-line dark:bg-dusk-raised"
         >
           <IconStar filled={record.favorite} className={record.favorite ? 'h-5 w-5 text-terracotta' : 'h-5 w-5'} />
           {t('collection.favorites')}
@@ -188,34 +188,35 @@ export function RecordDetailPage() {
         <button
           type="button"
           onClick={() => void setArchived(record.id, record.status !== 'archived')}
-          className="flex min-h-12 items-center justify-center rounded-xl border border-line px-4 py-2.5 transition-all active:scale-[0.98] dark:border-dusk-line"
+          className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-line bg-paper-raised px-4 py-2.5 transition-all active:scale-[0.98] dark:border-dusk-line dark:bg-dusk-raised"
         >
+          <IconArchive className="h-5 w-5" />
           {record.status === 'archived' ? t('detail.unarchive') : t('detail.archive')}
         </button>
         {!confirmingDelete ? (
           <button
             type="button"
             onClick={() => setConfirmingDelete(true)}
-            className="flex min-h-12 items-center justify-center gap-1 rounded-xl border border-red-300 px-4 py-2.5 text-red-600 dark:border-red-900"
+            className="flex min-h-12 items-center justify-center gap-1 rounded-xl border border-red-300 px-4 py-2.5 text-red-600 transition-all hover:bg-red-50 active:scale-[0.98] dark:border-red-900 dark:hover:bg-red-950/40"
           >
             <IconTrash className="h-4 w-4" /> {t('common.delete')}
           </button>
         ) : (
-          <div className="col-span-2 rounded-xl border border-red-300 p-4 dark:border-red-900">
-            <p className="font-medium">{t('detail.deleteTitle')}</p>
+          <div className="col-span-2 rounded-2xl border border-red-300 bg-red-50/60 p-4 dark:border-red-900 dark:bg-red-950/30">
+            <p className="font-semibold">{t('detail.deleteTitle')}</p>
             <p className="mt-0.5 text-sm text-ink-soft dark:text-dusk-soft">{t('detail.deleteBody')}</p>
             <div className="mt-3 flex gap-3">
               <button
                 type="button"
                 onClick={() => void onDelete()}
-                className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 font-semibold text-white"
+                className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 font-semibold text-white shadow-md shadow-red-600/25 transition-all active:scale-[0.98]"
               >
                 {t('common.confirm')}
               </button>
               <button
                 type="button"
                 onClick={() => setConfirmingDelete(false)}
-                className="flex-1 rounded-xl border border-line px-4 py-2.5 dark:border-dusk-line"
+                className="flex-1 rounded-xl border border-line px-4 py-2.5 transition-all active:scale-[0.98] dark:border-dusk-line"
               >
                 {t('common.cancel')}
               </button>

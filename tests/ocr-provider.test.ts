@@ -1,7 +1,7 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import http from 'node:http'
 import type { AddressInfo } from 'node:net'
-import { createOpenAiCompatibleProvider } from '../src/lib/ocr'
+import { createOpenAiCompatibleProvider, describeOcrError } from '../src/lib/ocr'
 import type { OcrConfig } from '../src/db/types'
 
 /**
@@ -175,5 +175,18 @@ describe('openai-compatible OCR provider (real-world endpoint shapes)', () => {
   it('throws a specific error when a proxy returns a 200 HTML page', async () => {
     handler = chatReply('<html>login required</html>')
     await expect(extract()).rejects.toThrow(/ocr-unparseable-response/)
+  })
+})
+
+describe('describeOcrError mapping', () => {
+  it('maps Safari/Chrome network failures to the CORS/offline message', () => {
+    expect(describeOcrError(new TypeError('Load failed')).key).toBe('form.ocrNetworkError')
+    expect(describeOcrError(new TypeError('Failed to fetch')).key).toBe('form.ocrNetworkError')
+  })
+
+  it('keeps HTTP-level errors on the generic reason key', () => {
+    const mapped = describeOcrError(new Error('ocr-failed:401: Invalid API key.'))
+    expect(mapped.key).toBe('form.ocrFailedReason')
+    expect(mapped.detail).toBe('ocr-failed:401: Invalid API key.')
   })
 })

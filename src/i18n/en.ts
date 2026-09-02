@@ -92,6 +92,7 @@ export default {
       ocrFilled: 'Filled by photo recognition',
       ocrFailed: 'Recognition failed, please try again',
       ocrFailedReason: 'Recognition failed: {{reason}}',
+      ocrNetworkError: 'Could not reach the endpoint — the provider may not allow browser (CORS) requests, or you are offline. ({{reason}})',
       ocrNotConfigured: 'Recognition is not configured yet',
       ocrWorking: 'Recognizing…',
       saveErrorQuota: 'Storage is full. Export a backup in Settings, remove some photos, then try again.',

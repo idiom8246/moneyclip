@@ -92,6 +92,7 @@ export default {
       ocrFilled: '已由照片辨識填入',
       ocrFailed: '辨識失敗,請再試一次',
       ocrFailedReason: '辨識失敗:{{reason}}',
+      ocrNetworkError: '無法連上辨識端點——可能是該服務不允許瀏覽器(CORS)請求,或目前離線。({{reason}})',
       ocrNotConfigured: '尚未設定辨識服務',
       ocrWorking: '辨識中⋯⋯',
       saveErrorQuota: '儲存空間不足。建議先到設定匯出備份,刪除部分照片後再試。',

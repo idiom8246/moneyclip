@@ -9,7 +9,7 @@ import { Chip, Field, GhostButton, PageHeader, PrimaryButton, SectionCard, field
 import { IconCamera, IconScan, IconSparkle, IconX } from '../components/icons'
 import { useAllTags, useCategories, useRecord, useSetting } from '../hooks'
 import { blobUrl, processImageFile, releaseBlobUrl } from '../lib/images'
-import { createOpenAiCompatibleProvider } from '../lib/ocr'
+import { createOpenAiCompatibleProvider, describeOcrError } from '../lib/ocr'
 import { lookupProduct } from '../lib/products'
 import {
   addAttachment,
@@ -201,8 +201,8 @@ export function RecordFormPage() {
     } catch (err) {
       // Spec §6.2: never lose the user's form state — surface WHY it failed
       // (401/400/404/CORS) so config mistakes are self-diagnosable.
-      const reason = (err instanceof Error ? err.message : String(err)).slice(0, 120)
-      toast(t('form.ocrFailedReason', { reason }))
+      const { key, detail } = describeOcrError(err)
+      toast(t(key, { reason: detail }))
     } finally {
       setOcrBusy(false)
     }
