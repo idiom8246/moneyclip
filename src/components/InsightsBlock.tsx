@@ -19,7 +19,24 @@ export function InsightsBlock({
   onTripClick: (tag: string) => void
 }) {
   const { t, i18n } = useTranslation()
-  const [open, setOpen] = useState(true)
+  // Collapsed by default: a journal you read, not a dashboard you scan.
+  // Remember the visitor's choice for next launch.
+  const [open, setOpen] = useState(() => {
+    try {
+      return localStorage.getItem('mc.insights') === 'open'
+    } catch {
+      return false
+    }
+  })
+  const toggle = () =>
+    setOpen((o) => {
+      try {
+        localStorage.setItem('mc.insights', o ? 'closed' : 'open')
+      } catch {
+        /* private mode — state stays in-memory */
+      }
+      return !o
+    })
   const defaultCurrency = useSetting('defaultCurrency')
   const rateSource = useRateSource()
   // Local calendar month (record dates are local yyyy-mm-dd, spec §5.1 本月).
@@ -35,9 +52,10 @@ export function InsightsBlock({
 
   return (
     <section className="rounded-2xl bg-paper-raised p-4 shadow-sm shadow-ink/[0.04] ring-1 ring-line dark:bg-dusk-raised dark:ring-dusk-line dark:shadow-none" aria-label={t('collection.insights.title')}>
+      <h2 className="sr-only">{t('collection.insights.title')}</h2>
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={toggle}
         aria-expanded={open}
         aria-label={open ? t('collection.insights.collapse') : t('collection.insights.expand')}
         className="flex w-full min-h-11 items-center justify-between"
@@ -77,9 +95,9 @@ export function InsightsBlock({
 
           {insight.topCategories.length > 0 && (
             <div>
-              <h4 className="mb-1 text-xs font-medium uppercase tracking-wide text-ink-soft dark:text-dusk-soft">
+              <h3 className="mb-1 text-xs font-medium uppercase tracking-wide text-ink-soft dark:text-dusk-soft">
                 {t('collection.insights.topCategories')}
-              </h4>
+              </h3>
               <ul className="space-y-1">
                 {insight.topCategories.map(({ categoryId, total }) => {
                   const cat = categories.find((c) => c.id === categoryId)
@@ -102,9 +120,9 @@ export function InsightsBlock({
 
           {insight.tripTotals.length > 0 && (
             <div>
-              <h4 className="mb-1 text-xs font-medium uppercase tracking-wide text-ink-soft dark:text-dusk-soft">
+              <h3 className="mb-1 text-xs font-medium uppercase tracking-wide text-ink-soft dark:text-dusk-soft">
                 {t('collection.insights.trips')}
-              </h4>
+              </h3>
               <div className="flex flex-wrap gap-2">
                 {insight.tripTotals.map(({ tag, total }) => (
                   <button

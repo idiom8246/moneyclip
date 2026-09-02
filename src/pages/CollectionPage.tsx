@@ -99,7 +99,7 @@ export function CollectionPage() {
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value as SortKey)}
-                className="min-h-9 rounded-lg bg-transparent px-2 text-sm"
+                className="min-h-11 rounded-lg bg-transparent px-2 text-sm"
                 aria-label={t('collection.sort.label')}
               >
                 <option value="createdAt">{t('collection.sort.createdAt')}</option>

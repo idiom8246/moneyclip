@@ -16,6 +16,9 @@ function renderApp() {
 }
 
 async function bootDb() {
+  // Close the singleton first so pending liveQueries can't reject with
+  // DatabaseClosedError when the DB is deleted underneath them.
+  await db.close()
   await db.delete()
   await db.open()
   await seedDefaultCategories(db)
@@ -39,7 +42,8 @@ describe('integration: full record lifecycle (spec §11 acceptance)', () => {
 
     // → Detail shows the record
     expect(await screen.findAllByText('一蘭拉麵')).not.toHaveLength(0)
-    expect(screen.getAllByText('Ichiran').length).toBeGreaterThan(0)
+    // merchant line joins with the defaulted date: "Ichiran · yyyy-mm-dd"
+    expect(screen.getAllByText(/Ichiran/).length).toBeGreaterThan(0)
 
     // → Edit: change the title
     await user.click(screen.getByText('編輯'))

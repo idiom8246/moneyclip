@@ -17,6 +17,9 @@ function renderApp() {
 }
 
 async function bootDb() {
+  // Close the singleton first so pending liveQueries can't reject with
+  // DatabaseClosedError when the DB is deleted underneath them.
+  await db.close()
   await db.delete()
   await db.open()
   await seedDefaultCategories(db)

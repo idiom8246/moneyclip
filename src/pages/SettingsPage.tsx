@@ -13,7 +13,7 @@ import {
   TrendingUp,
 } from 'lucide-react'
 import { useToast } from '../components/Toast'
-import { Field, GhostButton, PageHeader, SectionCard, fieldClass } from '../components/ui'
+import { DisclosureCard, Field, GhostButton, PageHeader, fieldClass } from '../components/ui'
 import { db } from '../db/db'
 import type { AppSettings } from '../db/types'
 import { useCategories, useSetting } from '../hooks'
@@ -26,6 +26,50 @@ import { applyTheme } from '../theme'
 import { categoryDisplayName } from '../lib/search'
 
 const sectionIcon = (Icon: typeof Coins) => <Icon className="h-4 w-4" strokeWidth={1.8} aria-hidden />
+
+/** In-app modal replacing window.prompt/confirm (iOS-hostile, a11y-hostile). */
+function Modal({
+  title,
+  onClose,
+  children,
+}: {
+  title: string
+  onClose: () => void
+  children: React.ReactNode
+}) {
+  const ref = useRef<HTMLDivElement>(null)
+  // Keep the latest close handler without re-running the effects on every
+  // parent render — re-focusing mid-typing would steal the caret.
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
+  useEffect(() => {
+    ref.current?.focus()
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') onCloseRef.current()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-ink/40 p-6 backdrop-blur-sm dark:bg-black/60"
+      onClick={onClose}
+    >
+      <div
+        ref={ref}
+        role="dialog"
+        aria-modal="true"
+        aria-label={title}
+        tabIndex={-1}
+        onClick={(e) => e.stopPropagation()}
+        className="w-full max-w-sm rounded-2xl bg-paper-raised p-4 shadow-xl ring-1 ring-line outline-none focus-visible:ring-terracotta dark:bg-dusk-raised dark:ring-dusk-line"
+      >
+        <h3 className="mb-3 font-semibold">{title}</h3>
+        {children}
+      </div>
+    </div>
+  )
+}
 
 function ToggleRow<A extends string>({
   options, value, onChange, labels,
@@ -75,6 +119,13 @@ export function SettingsPage() {
   const rateCacheRows = useLiveQuery(() => db.rateCache.toArray(), []) ?? []
   const [newCat, setNewCat] = useState('')
   const fileInput = useRef<HTMLInputElement>(null)
+  // In-app dialogs for the two destructive/prompt flows
+  const [renameTarget, setRenameTarget] = useState<{ id: string; name: string } | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{ id: string; label: string } | null>(null)
+  const [renameValue, setRenameValue] = useState('')
+  // Inline validation (silent-failure fix)
+  const [currencyError, setCurrencyError] = useState(false)
+  const [rateError, setRateError] = useState(false)
 
   useEffect(() => setOcrForm(ocrConfig), [ocrConfig])
 
@@ -98,7 +149,11 @@ export function SettingsPage() {
 
   const saveManualRate = async () => {
     const val = Number(manualValue)
-    if (!manualBase.trim() || !Number.isFinite(val) || val <= 0) return
+    if (!manualBase.trim() || !Number.isFinite(val) || val <= 0) {
+      setRateError(true)
+      return
+    }
+    setRateError(false)
     const next = { ...(await getSetting('manualRates')), [manualBase.toUpperCase()]: val }
     await setSetting('manualRates', next)
     setManualValue('')
@@ -127,16 +182,16 @@ export function SettingsPage() {
       <PageHeader title={t('settings.title')} onBack={() => navigate(-1)} />
 
       <div className="space-y-4">
-        <SectionCard title={t('settings.language')} icon={sectionIcon(Languages)}>
+        <DisclosureCard title={t('settings.language')} icon={sectionIcon(Languages)} defaultOpen>
           <ToggleRow
             options={['zh-TW', 'en'] as const}
             value={locale}
             onChange={(v) => void changeLocale(v)}
             labels={(v) => (v === 'zh-TW' ? '繁體中文' : 'English')}
           />
-        </SectionCard>
+        </DisclosureCard>
 
-        <SectionCard title={t('settings.theme')} icon={sectionIcon(Palette)}>
+        <DisclosureCard title={t('settings.theme')} icon={sectionIcon(Palette)} defaultOpen={false}>
           <ToggleRow
             options={['system', 'light', 'dark'] as const}
             value={theme}
@@ -145,9 +200,9 @@ export function SettingsPage() {
               v === 'system' ? t('settings.themeSystem') : v === 'light' ? t('settings.themeLight') : t('settings.themeDark')
             }
           />
-        </SectionCard>
+        </DisclosureCard>
 
-        <SectionCard title={t('settings.defaultCurrency')} icon={sectionIcon(Coins)}>
+        <DisclosureCard title={t('settings.defaultCurrency')} icon={sectionIcon(Coins)} defaultOpen={false}>
           <div className="flex gap-3">
             <select
               value={!customOpen && isCommonCurrency(defaultCurrency) ? defaultCurrency : 'CUSTOM'}
@@ -167,26 +222,36 @@ export function SettingsPage() {
               <option value="CUSTOM">{t('settings.customCurrency')}</option>
             </select>
             {customOpen && (
-              <input
-                defaultValue={isCommonCurrency(defaultCurrency) ? '' : defaultCurrency}
-                placeholder="USD"
-                onBlur={(e) => {
-                  const v = e.target.value.trim().toUpperCase()
-                  if (/^[A-Z]{3}$/.test(v)) {
-                    void setSetting('defaultCurrency', v)
-                    setCustomOpen(false)
-                  }
-                }}
-                className={fieldClass}
-                maxLength={3}
-                autoFocus
-                aria-label={t('settings.customCurrency')}
-              />
+              <div className="min-w-0 flex-1">
+                <input
+                  defaultValue={isCommonCurrency(defaultCurrency) ? '' : defaultCurrency}
+                  placeholder="USD"
+                  onBlur={(e) => {
+                    const v = e.target.value.trim().toUpperCase()
+                    if (/^[A-Z]{3}$/.test(v)) {
+                      setCurrencyError(false)
+                      void setSetting('defaultCurrency', v)
+                      setCustomOpen(false)
+                    } else {
+                      setCurrencyError(true)
+                    }
+                  }}
+                  onChange={() => setCurrencyError(false)}
+                  className={fieldClass}
+                  maxLength={3}
+                  autoFocus
+                  aria-label={t('settings.customCurrency')}
+                  aria-invalid={currencyError || undefined}
+                />
+                {currencyError && (
+                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{t('settings.invalidCurrency')}</p>
+                )}
+              </div>
             )}
           </div>
-        </SectionCard>
+        </DisclosureCard>
 
-        <SectionCard title={t('settings.rates')} icon={sectionIcon(TrendingUp)}>
+        <DisclosureCard title={t('settings.rates')} icon={sectionIcon(TrendingUp)} defaultOpen={false}>
           {rateCacheRows.length === 0 ? (
             <p className="mb-2 text-xs text-ink-soft dark:text-dusk-soft">{t('settings.ratesNever')}</p>
           ) : (
@@ -212,17 +277,23 @@ export function SettingsPage() {
                   placeholder="JPY"
                   maxLength={3}
                   className={`${fieldClass} max-w-20 shrink-0`}
-                  aria-label="Currency"
+                  aria-label={t('settings.customCurrency')}
                 />
                 <input
                   value={manualValue}
-                  onChange={(e) => setManualValue(e.target.value)}
+                  onChange={(e) => {
+                    setManualValue(e.target.value)
+                    setRateError(false)
+                  }}
                   placeholder={manualRates[manualBase] !== undefined ? String(manualRates[manualBase]) : '4.5'}
                   inputMode="decimal"
                   className={fieldClass}
                   aria-label={t('settings.manualRate', { base: defaultCurrency })}
                 />
               </div>
+              {rateError && (
+                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{t('settings.invalidRate')}</p>
+              )}
             </Field>
             <GhostButton onClick={() => void saveManualRate()} className="shrink-0 whitespace-nowrap">
               {t('common.save')}
@@ -235,9 +306,9 @@ export function SettingsPage() {
               ))}
             </ul>
           )}
-        </SectionCard>
+        </DisclosureCard>
 
-        <SectionCard title={t('settings.ocr')} icon={sectionIcon(ScanText)}>
+        <DisclosureCard title={t('settings.ocr')} icon={sectionIcon(ScanText)} defaultOpen={false}>
           <p className="mb-3 text-xs text-ink-soft dark:text-dusk-soft">{t('settings.ocrHint')}</p>
           <div className="space-y-3">
             <Field label={t('settings.ocrBaseUrl')}>
@@ -276,9 +347,9 @@ export function SettingsPage() {
               {t('common.save')}
             </GhostButton>
           </div>
-        </SectionCard>
+        </DisclosureCard>
 
-        <SectionCard title={t('settings.categories')} icon={sectionIcon(FolderCog)}>
+        <DisclosureCard title={t('settings.categories')} icon={sectionIcon(FolderCog)} defaultOpen={false}>
           <ul className="mb-3 space-y-1">
             {categories.map((c) => {
               const label = categoryDisplayName(c, i18n.language)
@@ -287,21 +358,17 @@ export function SettingsPage() {
                   <span>{c.icon} {label}</span>
                   <span className="flex gap-1">
                     <GhostButton
-                      className="min-h-9 px-3 py-1 text-xs"
+                      className="min-h-11 px-3 py-1 text-xs"
                       onClick={() => {
-                        const name = window.prompt(t('settings.categoryName'), label)?.trim()
-                        if (name) void renameCategory(c.id, name)
+                        setRenameTarget({ id: c.id, name: label })
+                        setRenameValue(label)
                       }}
                     >
                       {t('settings.renameCategory')}
                     </GhostButton>
                     <GhostButton
-                      className="min-h-9 px-3 py-1 text-xs"
-                      onClick={() => {
-                        if (window.confirm(t('settings.deleteCategoryConfirm', { name: label }))) {
-                          void deleteCategory(c.id)
-                        }
-                      }}
+                      className="min-h-11 px-3 py-1 text-xs"
+                      onClick={() => setDeleteTarget({ id: c.id, label })}
                     >
                       {t('common.delete')}
                     </GhostButton>
@@ -326,9 +393,9 @@ export function SettingsPage() {
               {t('common.add')}
             </GhostButton>
           </div>
-        </SectionCard>
+        </DisclosureCard>
 
-        <SectionCard title={t('settings.data')} icon={sectionIcon(Database)}>
+        <DisclosureCard title={t('settings.data')} icon={sectionIcon(Database)} defaultOpen={false}>
           <div className="grid gap-2">
             <GhostButton onClick={() => void downloadBundle(true)}>
               {t('settings.exportJson')}
@@ -361,12 +428,60 @@ export function SettingsPage() {
               }}
             />
           </div>
-        </SectionCard>
+        </DisclosureCard>
 
-        <SectionCard title={t('settings.about')} icon={sectionIcon(Info)}>
+        <DisclosureCard title={t('settings.about')} icon={sectionIcon(Info)} defaultOpen={false}>
           <p className="text-sm text-ink-soft dark:text-dusk-soft">{t('settings.aboutBody')}</p>
-        </SectionCard>
+        </DisclosureCard>
       </div>
+
+      {renameTarget && (
+        <Modal title={t('settings.renameCategory')} onClose={() => setRenameTarget(null)}>
+          <Field label={t('settings.categoryName')}>
+            <input
+              value={renameValue}
+              onChange={(e) => setRenameValue(e.target.value)}
+              className={fieldClass}
+              autoFocus
+            />
+          </Field>
+          <div className="mt-4 flex gap-3">
+            <GhostButton
+              className="flex-1"
+              onClick={() => {
+                const name = renameValue.trim()
+                if (!name) return
+                void renameCategory(renameTarget.id, name)
+                setRenameTarget(null)
+              }}
+            >
+              {t('common.confirm')}
+            </GhostButton>
+            <GhostButton className="flex-1" onClick={() => setRenameTarget(null)}>
+              {t('common.cancel')}
+            </GhostButton>
+          </div>
+        </Modal>
+      )}
+
+      {deleteTarget && (
+        <Modal title={t('settings.deleteCategoryConfirm', { name: deleteTarget.label })} onClose={() => setDeleteTarget(null)}>
+          <div className="mt-4 flex gap-3">
+            <GhostButton
+              className="flex-1 border-red-300 text-red-600 dark:border-red-900"
+              onClick={() => {
+                void deleteCategory(deleteTarget.id)
+                setDeleteTarget(null)
+              }}
+            >
+              {t('common.confirm')}
+            </GhostButton>
+            <GhostButton className="flex-1" onClick={() => setDeleteTarget(null)}>
+              {t('common.cancel')}
+            </GhostButton>
+          </div>
+        </Modal>
+      )}
     </div>
   )
 }

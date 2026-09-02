@@ -7,6 +7,7 @@ import type {
   RateCacheEntry,
   SettingRow,
 } from './types'
+import type { FormDraft } from '../lib/drafts'
 
 export class MoneyclipDB extends Dexie {
   records!: Table<ConsumptionRecord, string>
@@ -15,6 +16,7 @@ export class MoneyclipDB extends Dexie {
   settings!: Table<SettingRow, string>
   productCache!: Table<ProductCacheEntry, string>
   rateCache!: Table<RateCacheEntry, string>
+  drafts!: Table<FormDraft & { id: string }, string>
 
   constructor(name = 'moneyclip') {
     super(name)
@@ -26,6 +28,11 @@ export class MoneyclipDB extends Dexie {
       settings: 'key',
       productCache: 'barcode',
       rateCache: 'base',
+    })
+    // v2: unsaved add-form draft (incl. staged photo blobs) — kills the
+    // "tab died, receipt gone" failure mode.
+    this.version(2).stores({
+      drafts: 'id',
     })
   }
 }

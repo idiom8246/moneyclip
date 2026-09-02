@@ -5,11 +5,12 @@ import { BarcodeScanner } from '../components/BarcodeScanner'
 import { Pencil } from 'lucide-react'
 import { TagInput } from '../components/TagInput'
 import { useToast } from '../components/Toast'
-import { Chip, Field, GhostButton, PageHeader, PrimaryButton, SectionCard, fieldClass } from '../components/ui'
+import { Chip, DisclosureCard, Field, GhostButton, PageHeader, PrimaryButton, SectionCard, fieldClass } from '../components/ui'
 import { IconCamera, IconScan, IconSparkle, IconX } from '../components/icons'
 import { useAllTags, useCategories, useRecord, useSetting } from '../hooks'
 import { blobUrl, processImageFile, releaseBlobUrl } from '../lib/images'
 import { createOpenAiCompatibleProvider, describeOcrError } from '../lib/ocr'
+import { clearFormDraft, isDraftMeaningful, loadFormDraft, saveFormDraft } from '../lib/drafts'
 import { lookupProduct } from '../lib/products'
 import {
   addAttachment,
@@ -33,6 +34,12 @@ interface StagedPhoto {
   preview: string
 }
 
+/** Local yyyy-mm-dd for today — a journal assumes today, not blank. */
+function localToday(): string {
+  const d = new Date()
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+
 export function RecordFormPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
@@ -48,7 +55,7 @@ export function RecordFormPage() {
   const [title, setTitle] = useState('')
   const [price, setPrice] = useState('')
   const [currency, setCurrency] = useState(defaultCurrency)
-  const [date, setDate] = useState('')
+  const [date, setDate] = useState(localToday())
   const [merchant, setMerchant] = useState('')
   const [saveReason, setSaveReason] = useState<SaveReason | undefined>()
   const [categoryId, setCategoryId] = useState<string>('')
@@ -69,6 +76,9 @@ export function RecordFormPage() {
   // Tracks manual price edits so the items auto-sum can pre-fill without
   // fighting the user (spec §4: 自動加總,仍可手動覆寫).
   const priceTouched = useRef(false)
+  // Draft lifecycle: restore once on mount, then debounce-persist changes.
+  const draftRestored = useRef(false)
+  const draftTimer = useRef<number>()
 
   const updateItem = (itemId: string, patch: Partial<RecordItem>) =>
     setItems((prev) => prev.map((x) => (x.id === itemId ? { ...x, ...patch } : x)))
@@ -105,9 +115,75 @@ export function RecordFormPage() {
   }, [isEdit, hydrated, existing, defaultCurrency])
 
   useEffect(() => {
-    if (!isEdit) setCurrency(defaultCurrency)
+    if (!isEdit && !draftRestored.current) setCurrency(defaultCurrency)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [defaultCurrency])
+
+  // New-record mode: restore an unsaved draft once (kill-the-tab safety).
+  useEffect(() => {
+    if (isEdit) {
+      draftRestored.current = true
+      return
+    }
+    let cancelled = false
+    void (async () => {
+      const draft = await loadFormDraft(db)
+      if (cancelled || draftRestored.current) return
+      draftRestored.current = true
+      if (!draft || !isDraftMeaningful(draft)) return
+      setTitle(draft.title)
+      setPrice(draft.price)
+      setCurrency(draft.currency || defaultCurrency)
+      setDate(draft.date || localToday())
+      setMerchant(draft.merchant)
+      setSaveReason(draft.saveReason)
+      setCategoryId(draft.categoryId ?? '')
+      setTags(draft.tags)
+      setNote(draft.note)
+      setItems(draft.items.length ? draft.items : [{ id: uid(), name: '' }])
+      if (draft.photos.length) {
+        setPhotos(
+          draft.photos.map((p) => ({
+            key: p.key,
+            blob: p.blob,
+            thumbBlob: p.thumbBlob,
+            preview: blobUrl(p.thumbBlob),
+          })),
+        )
+      }
+      priceTouched.current = Boolean(draft.price)
+      toast(t('form.draftRestored'))
+    })()
+    return () => {
+      cancelled = true
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isEdit])
+
+  // Debounce-persist the working draft so an interrupted session survives.
+  useEffect(() => {
+    if (isEdit || !draftRestored.current) return
+    window.clearTimeout(draftTimer.current)
+    draftTimer.current = window.setTimeout(() => {
+      void saveFormDraft(
+        {
+          title,
+          price,
+          currency,
+          date,
+          merchant,
+          saveReason,
+          categoryId,
+          tags,
+          note,
+          items,
+          photos: photos.map((p) => ({ key: p.key, blob: p.blob, thumbBlob: p.thumbBlob })),
+        },
+        db,
+      )
+    }, 600)
+    return () => window.clearTimeout(draftTimer.current)
+  }, [isEdit, title, price, currency, date, merchant, saveReason, categoryId, tags, note, items, photos])
 
   // Release previews on unmount
   useEffect(
@@ -139,8 +215,9 @@ export function RecordFormPage() {
           },
         ])
       } catch {
-        // Spec §8: failed image never discards the others / the form.
-        toast(t('barcode.cameraError'))
+        // Spec §8: a failed image never discards the others / the form —
+        // and say what actually failed (not the camera).
+        toast(t('form.imageProcessFailed'))
       }
     }
   }
@@ -234,6 +311,7 @@ export function RecordFormPage() {
         for (const attId of removedAttachmentIds) await deleteAttachment(attId)
       } else {
         recordId = (await createRecord(payload)).id
+        await clearFormDraft(db)
       }
       for (const photo of photos) {
         if (!photo.attachmentId) {
@@ -241,6 +319,7 @@ export function RecordFormPage() {
         }
       }
       navigate(`/record/${recordId}`, { replace: true })
+      toast(t('form.saved'))
     } catch (err) {
       // Spec §8: quota errors get an explicit message; form state is preserved.
       if (err instanceof DOMException && err.name === 'QuotaExceededError') {
@@ -258,11 +337,6 @@ export function RecordFormPage() {
       <PageHeader
         title={isEdit ? t('form.editRecord') : t('form.newRecord')}
         onBack={() => navigate(-1)}
-        action={
-          <PrimaryButton onClick={onSave} disabled={saving} className="min-h-10 px-5">
-            {t('common.save')}
-          </PrimaryButton>
-        }
       />
 
       <div className="space-y-5 pb-8">
@@ -280,7 +354,7 @@ export function RecordFormPage() {
                       type="button"
                       onClick={() => removePhoto(p.key)}
                       aria-label={t('common.delete')}
-                      className="absolute -right-2 -top-2 flex h-8 w-8 items-center justify-center rounded-full bg-ink text-paper dark:bg-dusk-line dark:text-dusk-ink"
+                      className="absolute -right-2 -top-2 flex h-10 w-10 items-center justify-center rounded-full bg-ink/90 text-paper dark:bg-dusk-line dark:text-dusk-ink"
                     >
                       <IconX className="h-4 w-4" />
                     </button>
@@ -336,7 +410,7 @@ export function RecordFormPage() {
         </SectionCard>
 
         {/* Section B: 手動輸入 — one empty item row by default; user appends rows */}
-        <SectionCard title={t('form.manualEntry')} icon={<Pencil className="h-4 w-4" strokeWidth={1.8} />}>
+        <DisclosureCard title={t('form.manualEntry')} icon={<Pencil className="h-4 w-4" strokeWidth={1.8} />} defaultOpen>
           <div className="space-y-3">
             {items.map((item) => (
               <div key={item.id} className="rounded-lg bg-paper p-2.5 ring-1 ring-line dark:bg-dusk dark:ring-dusk-line">
@@ -389,7 +463,7 @@ export function RecordFormPage() {
               {t('form.addItem')}
             </GhostButton>
           </div>
-        </SectionCard>
+        </DisclosureCard>
 
         {/* Title (only required field) */}
         <Field label={`${t('form.title')} *`}>
@@ -448,12 +522,12 @@ export function RecordFormPage() {
           </Field>
         </div>
 
-        {/* 5. Reason chips */}
+        {/* Reason chips stay in the main flow — it is the soul of a journal entry */}
         <div>
           <span className="mb-1.5 block text-sm font-medium text-ink-soft dark:text-dusk-soft">
             {t('form.reason')}
           </span>
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2" role="group" aria-label={t('form.reason')}>
             {SAVE_REASONS.map((r) => (
               <Chip key={r} active={saveReason === r}
                 onClick={() => setSaveReason(saveReason === r ? undefined : r)}>
@@ -463,35 +537,43 @@ export function RecordFormPage() {
           </div>
         </div>
 
-        {/* 6. Category + tags */}
-        <Field label={t('form.category')}>
-          <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={fieldClass}>
-            <option value="">{t('form.noCategory')}</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.icon} {categoryDisplayName(c, i18n.language)}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <div>
-          <span className="mb-1.5 block text-sm font-medium text-ink-soft dark:text-dusk-soft">
-            {t('form.tags')}
-          </span>
-          <TagInput tags={tags} onChange={setTags} suggestions={allTags} />
-        </div>
+        {/* Progressive disclosure: secondary detail groups */}
+        <DisclosureCard title={t('form.moreDetails')} icon={<IconSparkle className="h-4 w-4" strokeWidth={1.8} />}>
+          <div className="space-y-5">
+            <Field label={t('form.category')}>
+              <select value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={fieldClass}>
+                <option value="">{t('form.noCategory')}</option>
+                {categories.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.icon} {categoryDisplayName(c, i18n.language)}
+                  </option>
+                ))}
+              </select>
+            </Field>
+            <div>
+              <span className="mb-1.5 block text-sm font-medium text-ink-soft dark:text-dusk-soft">
+                {t('form.tags')}
+              </span>
+              <TagInput tags={tags} onChange={setTags} suggestions={allTags} />
+            </div>
+            <Field label={t('form.note')}>
+              <textarea
+                value={note}
+                onChange={(e) => setNote(e.target.value)}
+                placeholder={t('form.notePlaceholder')}
+                rows={3}
+                className={`${fieldClass} resize-y`}
+              />
+            </Field>
+          </div>
+        </DisclosureCard>
+      </div>
 
-        {/* 7. Note */}
-        <Field label={t('form.note')}>
-          <textarea
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-            placeholder={t('form.notePlaceholder')}
-            rows={3}
-            className={`${fieldClass} resize-y`}
-          />
-        </Field>
-
+      {/* Sticky thumb-zone save — the primary action lives where thumbs are */}
+      <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] z-20 -mx-4 mt-4 border-t border-line/60 bg-paper/90 px-4 py-3 backdrop-blur-xl dark:border-dusk-line/60 dark:bg-dusk/90">
+        <PrimaryButton onClick={onSave} disabled={saving} className="min-h-12 w-full text-base">
+          {saving ? t('form.saving') : t('common.save')}
+        </PrimaryButton>
       </div>
 
       {scanning && <BarcodeScanner onResult={(code) => void onScanResult(code)} onClose={() => setScanning(false)} />}

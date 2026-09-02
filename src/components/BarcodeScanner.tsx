@@ -21,9 +21,11 @@ export function BarcodeScanner({
     let cancelled = false
 
     BrowserMultiFormatReader.listVideoInputDevices()
-      .then((devices) =>
-        reader.decodeFromVideoDevice(
-          devices[0]?.deviceId,
+      .then((devices) => {
+        // Prefer the rear camera — devices[0] is sometimes the selfie cam.
+        const back = devices.find((d) => !/front|user|前/i.test(d.label)) ?? devices[0]
+        return reader.decodeFromVideoDevice(
+          back?.deviceId,
           videoRef.current ?? undefined,
           (result) => {
             if (result && !cancelled) {
@@ -32,8 +34,8 @@ export function BarcodeScanner({
               onResult(result.getText())
             }
           },
-        ),
-      )
+        )
+      })
       .then((c) => {
         if (cancelled) c.stop()
         else controls = c
@@ -47,13 +49,19 @@ export function BarcodeScanner({
   }, [onResult])
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-black/90" role="dialog" aria-modal>
+    <div
+      className="fixed inset-0 z-50 flex flex-col bg-black/90"
+      role="dialog"
+      aria-modal="true"
+      aria-label={t('barcode.scanning')}
+    >
       <div className="flex items-center justify-between p-3">
         <span className="text-sm text-white">{t('barcode.scanning')}</span>
         <button
           type="button"
           onClick={onClose}
           aria-label={t('common.close')}
+          autoFocus
           className="flex h-11 w-11 items-center justify-center rounded-full text-white"
         >
           <IconX />

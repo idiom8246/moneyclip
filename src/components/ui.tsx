@@ -1,5 +1,6 @@
-import type { ButtonHTMLAttributes, ReactNode } from 'react'
-import { IconBack } from './icons'
+import { useState, type ButtonHTMLAttributes, type ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
+import { IconBack, IconChevronDown } from './icons'
 
 /** Small chip used for reasons/tags/filters — always also text, never color-only (spec §7 A11y). */
 export function Chip({
@@ -18,9 +19,9 @@ export function Chip({
       type="button"
       onClick={onClick}
       aria-pressed={active}
-      className={`inline-flex min-h-9 items-center gap-1 rounded-full px-3.5 py-1.5 text-sm transition-all active:scale-95 ${
+      className={`inline-flex min-h-11 items-center gap-1 rounded-full px-3.5 py-1.5 text-sm transition-all active:scale-95 ${
         active
-          ? 'bg-terracotta text-paper shadow-sm shadow-terracotta/30'
+          ? 'bg-terracotta-deep text-paper shadow-sm shadow-terracotta/30'
           : 'bg-terracotta-soft/60 text-ink hover:bg-terracotta-soft dark:bg-dusk-line/60 dark:text-dusk-ink dark:hover:bg-dusk-line'
       } ${className}`}
     >
@@ -38,13 +39,14 @@ export function PageHeader({
   onBack?: () => void
   action?: ReactNode
 }) {
+  const { t } = useTranslation()
   return (
     <header className="sticky top-0 z-30 flex min-h-14 items-center gap-2 border-b border-line/60 bg-paper/85 px-2 py-2 backdrop-blur-xl dark:border-dusk-line/60 dark:bg-dusk/85">
       {onBack && (
         <button
           type="button"
           onClick={onBack}
-          aria-label="Back"
+          aria-label={t('common.back')}
           className="flex h-11 w-11 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-terracotta-soft/60 active:scale-95 dark:text-dusk-soft dark:hover:bg-dusk-line/60"
         >
           <IconBack />
@@ -125,6 +127,40 @@ export function SectionCard({
         {title}
       </h2>
       {children}
+    </section>
+  )
+}
+
+/** Collapsible card section — progressive disclosure for secondary groups. */
+export function DisclosureCard({
+  title,
+  icon,
+  defaultOpen = false,
+  children,
+}: {
+  title: string
+  icon?: ReactNode
+  defaultOpen?: boolean
+  children: ReactNode
+}) {
+  const [open, setOpen] = useState(defaultOpen)
+  return (
+    <section className="rounded-2xl bg-paper-raised shadow-sm shadow-ink/[0.04] ring-1 ring-line dark:bg-dusk-raised dark:ring-dusk-line dark:shadow-none">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        aria-expanded={open}
+        className="flex min-h-12 w-full items-center gap-2 p-4 text-xs font-semibold uppercase tracking-wider text-ink-soft transition-colors dark:text-dusk-soft"
+      >
+        {icon && (
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-terracotta-soft text-terracotta dark:bg-dusk-line dark:text-dusk-ink [&>svg]:h-4 [&>svg]:w-4">
+            {icon}
+          </span>
+        )}
+        <span className="flex-1 text-left">{title}</span>
+        <IconChevronDown className={`h-4 w-4 shrink-0 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && <div className="px-4 pb-4">{children}</div>}
     </section>
   )
 }

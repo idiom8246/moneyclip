@@ -40,7 +40,7 @@ export function TagInput({
               type="button"
               onClick={() => onChange(tags.filter((x) => x !== tag))}
               aria-label={t('common.removeTag', { tag })}
-              className="ml-0.5 flex h-6 w-6 items-center justify-center rounded-full hover:bg-paper/60 dark:hover:bg-dusk"
+              className="ml-0.5 flex h-8 w-8 items-center justify-center rounded-full text-base hover:bg-paper/60 dark:hover:bg-dusk"
             >
               ×
             </button>
@@ -58,7 +58,7 @@ export function TagInput({
             }
           }}
           placeholder={t('form.tagPlaceholder')}
-          className="min-h-8 min-w-28 flex-1 bg-transparent px-1 text-sm outline-none placeholder:text-ink-soft/60 dark:placeholder:text-dusk-soft/60"
+          className="min-h-8 min-w-28 flex-1 rounded-lg bg-transparent px-1 text-sm placeholder:text-ink-soft/60 focus-visible:outline-2 focus-visible:outline-terracotta dark:placeholder:text-dusk-soft/60"
         />
       </div>
       {draft && matches.length > 0 && (
