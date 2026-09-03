@@ -1,5 +1,6 @@
 import {
   Archive,
+  BarChart3,
   Camera,
   Check,
   ChevronDown,
@@ -9,6 +10,7 @@ import {
   ScanBarcode,
   Search,
   Settings,
+  ShoppingBasket,
   Sparkles,
   Star,
   Trash2,
@@ -42,3 +44,5 @@ export const IconStar = ({ filled, ...p }: IconProps & { filled?: boolean }) => 
 )
 export const IconTrash = (p: IconProps) => <Trash2 {...defaults(p)} />
 export const IconX = (p: IconProps) => <X {...defaults(p)} />
+export const IconBasket = (p: IconProps) => <ShoppingBasket {...defaults(p)} />
+export const IconChart = (p: IconProps) => <BarChart3 {...defaults(p)} />

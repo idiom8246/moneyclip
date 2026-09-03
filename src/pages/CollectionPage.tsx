@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { BarChart3, ReceiptText } from 'lucide-react'
+import { ReceiptText } from 'lucide-react'
 import { InsightsBlock } from '../components/InsightsBlock'
 import { RecordCard } from '../components/RecordCard'
 import { Chip } from '../components/ui'
@@ -42,22 +42,13 @@ export function CollectionPage() {
     <div className="px-4 pb-4">
       <header className="sticky top-0 z-30 -mx-4 flex min-h-14 items-center justify-between border-b border-line/60 bg-paper/85 px-4 py-2 backdrop-blur-xl dark:border-dusk-line/60 dark:bg-dusk/85">
         <h1 className="text-2xl font-bold tracking-tight">{t('collection.title')}</h1>
-        <span className="flex items-center">
-          <Link
-            to="/reports"
-            aria-label={t('reports.title')}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-terracotta-soft/60 active:scale-95 dark:text-dusk-soft dark:hover:bg-dusk-line/60"
-          >
-            <BarChart3 />
-          </Link>
-          <Link
-            to="/settings"
-            aria-label={t('settings.title')}
-            className="flex h-11 w-11 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-terracotta-soft/60 active:scale-95 dark:text-dusk-soft dark:hover:bg-dusk-line/60"
-          >
-            <IconSettings />
-          </Link>
-        </span>
+        <Link
+          to="/settings"
+          aria-label={t('settings.title')}
+          className="flex h-11 w-11 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-terracotta-soft/60 active:scale-95 dark:text-dusk-soft dark:hover:bg-dusk-line/60"
+        >
+          <IconSettings />
+        </Link>
       </header>
 
       {(records?.length ?? 0) > 0 && (

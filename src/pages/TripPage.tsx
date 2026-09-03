@@ -28,6 +28,7 @@ export function TripPage() {
     const c = categories.find((x) => x.id === categoryId)
     return c ? `${c.icon ?? ''} ${categoryDisplayName(c, i18n.language)}` : t('form.noCategory')
   }
+  const money = (v: number) => formatMoney(Math.round(v * 100) / 100, defaultCurrency, i18n.language)
 
   return (
     <div className="px-4 pb-10">
@@ -58,6 +59,13 @@ export function TripPage() {
               </p>
             )}
           </div>
+
+          {report.savings > 0 && (
+            <div className="rounded-2xl bg-terracotta-soft p-4 text-terracotta-deep dark:bg-dusk-line dark:text-dusk-ink">
+              <p className="text-xs font-semibold uppercase tracking-wider opacity-80">{t('reports.savings')}</p>
+              <p className="mt-0.5 text-2xl font-bold tabular-nums">{money(report.savings)}</p>
+            </div>
+          )}
 
           {report.byCategory.length > 0 && (
             <SectionCard title={t('trip.byCategory')}>

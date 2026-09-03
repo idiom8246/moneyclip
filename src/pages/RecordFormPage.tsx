@@ -447,7 +447,7 @@ export function RecordFormPage() {
                     <IconX className="h-4 w-4" />
                   </button>
                 </div>
-                <div className="mt-2 grid grid-cols-3 gap-2">
+                <div className="mt-2 grid grid-cols-2 gap-2">
                   <input
                     value={item.qty ?? ''}
                     onChange={(e) => updateItem(item.id, { qty: e.target.value ? Number(e.target.value) : undefined })}
@@ -462,6 +462,14 @@ export function RecordFormPage() {
                     placeholder={t('form.unitPrice')}
                     inputMode="decimal"
                     aria-label={t('form.unitPrice')}
+                    className={`${fieldClass} min-h-10 text-sm`}
+                  />
+                  <input
+                    value={item.originalPrice ?? ''}
+                    onChange={(e) => updateItem(item.id, { originalPrice: e.target.value ? Number(e.target.value) : undefined })}
+                    placeholder={t('form.originalPrice')}
+                    inputMode="decimal"
+                    aria-label={`${t('form.originalPrice')}（${t('common.optional')}）`}
                     className={`${fieldClass} min-h-10 text-sm`}
                   />
                   <input

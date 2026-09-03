@@ -3,9 +3,10 @@ import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
 import { RecordCard } from '../components/RecordCard'
 import { PageHeader, SectionCard } from '../components/ui'
-import { merchantStats } from '../lib/analytics'
+import { merchantStats, itemKey, priceHistory } from '../lib/analytics'
 import { formatMoney } from '../lib/currency'
-import { itemKey } from '../lib/analytics'
+import { addShoppingItem } from '../lib/shoppingList'
+import { useToast } from '../components/Toast'
 import { useRateSource, useRecords, useSetting } from '../hooks'
 
 /** One merchant's spending stats — visits, average, top items, receipts. */
@@ -17,6 +18,19 @@ export function StorePage() {
   const records = useRecords()
   const defaultCurrency = useSetting('defaultCurrency')
   const rateSource = useRateSource()
+  const toast = useToast()
+
+  const addToList = (itemName: string) => {
+    // Latest raw unit price for this item becomes the estimate.
+    const d = priceHistory(records ?? [], itemKey({ id: 'k', name: itemName }), defaultCurrency, rateSource)
+    const latest = d.purchases[0]
+    void addShoppingItem({
+      name: itemName,
+      estPrice: latest?.unitPrice,
+      estCurrency: latest?.currency ?? defaultCurrency,
+    })
+    toast(t('list.added'))
+  }
 
   const stats = useMemo(
     () => merchantStats(records ?? [], decoded, defaultCurrency, rateSource),
@@ -59,14 +73,22 @@ export function StorePage() {
                 {stats.topItems.map((it) => {
                   const key = encodeURIComponent(itemKey({ id: 'k', name: it.name }))
                   return (
-                    <li key={it.name}>
+                    <li key={it.name} className="flex items-center gap-2">
                       <Link
                         to={`/product/${key}`}
-                        className="flex min-h-11 items-center justify-between rounded-xl bg-paper px-3 py-2 text-sm ring-1 ring-line transition-all active:scale-[0.99] dark:bg-dusk dark:ring-dusk-line"
+                        className="flex min-h-11 min-w-0 flex-1 items-center justify-between rounded-xl bg-paper px-3 py-2 text-sm ring-1 ring-line transition-all active:scale-[0.99] dark:bg-dusk dark:ring-dusk-line"
                       >
                         <span className="truncate">{it.name}</span>
                         <span className="shrink-0 text-xs text-ink-soft dark:text-dusk-soft">×{it.count}</span>
                       </Link>
+                      <button
+                        type="button"
+                        onClick={() => addToList(it.name)}
+                        aria-label={`${t('list.addToList')}: ${it.name}`}
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-soft ring-1 ring-line transition-colors active:scale-95 dark:text-dusk-soft dark:ring-dusk-line"
+                      >
+                        +
+                      </button>
                     </li>
                   )
                 })}

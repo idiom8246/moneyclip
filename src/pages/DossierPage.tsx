@@ -1,11 +1,13 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
-import { PageHeader, SectionCard } from '../components/ui'
+import { PageHeader, GhostButton, SectionCard } from '../components/ui'
 import { categoryDisplayName } from '../lib/search'
 import { useCategories, useRateSource, useRecords, useSetting } from '../hooks'
 import { priceHistory } from '../lib/analytics'
 import { formatMoney } from '../lib/currency'
+import { addShoppingItem } from '../lib/shoppingList'
+import { useToast } from '../components/Toast'
 
 /** Product dossier: one item's price history across merchants and trips. */
 export function DossierPage() {
@@ -22,6 +24,8 @@ export function DossierPage() {
     () => priceHistory(records ?? [], decoded, defaultCurrency, rateSource),
     [records, decoded, defaultCurrency, rateSource],
   )
+  const toast = useToast()
+  const latest = dossier.purchases[0]
   const categoryOf = (categoryId: string | null | undefined) => {
     const c = categories.find((x) => x.id === categoryId)
     return c ? `${c.icon ?? ''} ${categoryDisplayName(c, i18n.language)}` : ''
@@ -61,6 +65,22 @@ export function DossierPage() {
               </p>
             </div>
           </div>
+
+          {latest?.unitPrice !== undefined && (
+            <GhostButton
+              className="mt-2 w-full"
+              onClick={() => {
+                void addShoppingItem({
+                  name: dossier.name,
+                  estPrice: latest.unitPrice,
+                  estCurrency: latest.currency ?? defaultCurrency,
+                })
+                toast(t('list.added'))
+              }}
+            >
+              {t('list.addToList')}
+            </GhostButton>
+          )}
 
           <SectionCard title={t('dossier.purchases', { count: dossier.count })}>
             <ul className="space-y-2">

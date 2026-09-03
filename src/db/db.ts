@@ -8,6 +8,7 @@ import type {
   SettingRow,
 } from './types'
 import type { FormDraft } from '../lib/drafts'
+import type { ShoppingItem } from '../lib/shoppingList'
 
 export class MoneyclipDB extends Dexie {
   records!: Table<ConsumptionRecord, string>
@@ -17,6 +18,7 @@ export class MoneyclipDB extends Dexie {
   productCache!: Table<ProductCacheEntry, string>
   rateCache!: Table<RateCacheEntry, string>
   drafts!: Table<FormDraft & { id: string }, string>
+  shoppingList!: Table<ShoppingItem, string>
 
   constructor(name = 'moneyclip') {
     super(name)
@@ -33,6 +35,10 @@ export class MoneyclipDB extends Dexie {
     // "tab died, receipt gone" failure mode.
     this.version(2).stores({
       drafts: 'id',
+    })
+    // v3: shopping list (Phase 2 — 清單).
+    this.version(3).stores({
+      shoppingList: 'id, checked, createdAt',
     })
   }
 }

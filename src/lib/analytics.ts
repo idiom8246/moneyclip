@@ -181,6 +181,36 @@ export interface TripReport {
   convertedTotal: number
   unconvertedCount: number
   byCategory: Array<{ categoryId: string | null; total: number }>
+  savings: number
+  savingsCount: number
+}
+
+/** Σ (originalPrice − unitPrice) × qty across a set of records, clamped ≥0. */
+function sumSavings(
+  rows: ConsumptionRecord[],
+  base: string,
+  rateSource: RateSource,
+): { savings: number; savingsCount: number } {
+  let savings = 0
+  let savingsCount = 0
+  for (const rec of rows) {
+    const currency = (rec.currency ?? base).toUpperCase()
+    for (const it of rec.items ?? []) {
+      if (it.originalPrice === undefined || it.unitPrice === undefined) continue
+      const savedUnit = it.originalPrice - it.unitPrice
+      if (savedUnit <= 0) continue
+      const saved = savedUnit * (it.qty ?? 1)
+      let convertedSaved: number | null
+      if (currency === base.toUpperCase()) convertedSaved = saved
+      else if (it.baseUnitPrice !== undefined && it.unitPrice > 0)
+        convertedSaved = saved * (it.baseUnitPrice / it.unitPrice)
+      else convertedSaved = convert(saved, currency, base, rateSource)
+      if (convertedSaved === null) continue
+      savings += convertedSaved
+      savingsCount++
+    }
+  }
+  return { savings, savingsCount }
 }
 
 export function tripReport(
@@ -230,6 +260,7 @@ export function tripReport(
     byCategory: [...byCategory.entries()]
       .map(([categoryId, total]) => ({ categoryId, total }))
       .sort((a, b) => b.total - a.total),
+    ...sumSavings(receipts, base, rateSource),
   }
 }
 
@@ -257,8 +288,6 @@ export function reportMonth(
   const byMerchant = new Map<string, { merchant: string; total: number }>()
   let total = 0
   let unconvertedCount = 0
-  let savings = 0
-  let savingsCount = 0
 
   for (const rec of rows) {
     const price = effectivePrice(rec)
@@ -280,24 +309,7 @@ export function reportMonth(
         byMerchant.set(mKey, entry)
       }
     }
-
-    for (const it of rec.items ?? []) {
-      if (it.originalPrice === undefined || it.unitPrice === undefined) continue
-      const savedUnit = it.originalPrice - it.unitPrice
-      if (savedUnit <= 0) continue // clamp bad data at zero (pinned)
-      const saved = savedUnit * (it.qty ?? 1)
-      const cur = currency
-      let convertedSaved: number | null
-      if (cur === base.toUpperCase()) convertedSaved = saved
-      else if (it.baseUnitPrice !== undefined && it.unitPrice > 0)
-        convertedSaved = saved * (it.baseUnitPrice / it.unitPrice)
-      else convertedSaved = convert(saved, cur, base, rateSource)
-      if (convertedSaved === null) continue
-      savings += convertedSaved
-      savingsCount++
-    }
   }
-
   return {
     month,
     total,
@@ -308,8 +320,8 @@ export function reportMonth(
       .sort((a, b) => b.total - a.total),
     byMerchant: [...byMerchant.values()]
       .sort((a, b) => b.total - a.total)
-      .map(({ merchant, total }) => ({ merchant, total })),    savings,
-    savingsCount,
+      .map(({ merchant, total }) => ({ merchant, total })),
+    ...sumSavings(rows, base, rateSource),
   }
 }
 

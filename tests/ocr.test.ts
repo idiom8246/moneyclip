@@ -35,4 +35,19 @@ describe('sanitizeReceipt', () => {
       sanitizeReceipt({ date: 'July 3', total: -5, currency: 'JPYY', merchant: '' }),
     ).toEqual({})
   })
+
+  it('keeps originalPrice only when it is a real discount', () => {
+    const out = sanitizeReceipt({
+      items: [
+        { name: 'discounted', unitPrice: 5, originalPrice: 7.5 },
+        { name: 'markup-noise', unitPrice: 5, originalPrice: 3 },
+        { name: 'no-unit-price', originalPrice: 9 },
+      ],
+    })
+    expect(out.items).toEqual([
+      { name: 'discounted', unitPrice: 5, originalPrice: 7.5 },
+      { name: 'markup-noise', unitPrice: 5 },
+      { name: 'no-unit-price' },
+    ])
+  })
 })

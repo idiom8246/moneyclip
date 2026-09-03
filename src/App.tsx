@@ -10,6 +10,7 @@ import { DossierPage } from './pages/DossierPage'
 import { StorePage } from './pages/StorePage'
 import { TripPage } from './pages/TripPage'
 import { ReportsPage } from './pages/ReportsPage'
+import { ShoppingListPage } from './pages/ShoppingListPage'
 
 export default function App() {
   return (
@@ -24,6 +25,7 @@ export default function App() {
             <Route path="/record/:id/edit" element={<RecordFormPage />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/list" element={<ShoppingListPage />} />
             <Route path="/product/:key" element={<DossierPage />} />
             <Route path="/store/:name" element={<StorePage />} />
             <Route path="/trip/:tag" element={<TripPage />} />

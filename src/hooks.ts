@@ -1,6 +1,7 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from './db/db'
 import type { Attachment, Category, ConsumptionRecord } from './db/types'
+import type { ShoppingItem } from './lib/shoppingList'
 import { useSetting, getSetting } from './lib/settings'
 import { ensureRates } from './lib/rates'
 import type { RateSource } from './lib/currency'
@@ -76,6 +77,11 @@ export function usePagedList<T>(items: T[], pageSize = 100) {
     hasMore: items.length > count,
     loadMore: () => setCount((c) => c + pageSize),
   }
+}
+
+/** Shopping list, oldest first — unchecked on top when rendering. */
+export function useShoppingItems(): ShoppingItem[] | undefined {
+  return useLiveQuery(() => db.shoppingList.orderBy('createdAt').toArray(), [])
 }
 
 /** Shared single URL-param setter for filter chips (Collection & Search). */

@@ -14,7 +14,7 @@ export interface ParsedReceipt {
   date?: string
   total?: number
   currency?: string
-  items?: Array<{ name: string; qty?: number; unitPrice?: number }>
+  items?: Array<{ name: string; qty?: number; unitPrice?: number; originalPrice?: number }>
 }
 
 export interface OcrProvider {
@@ -40,8 +40,8 @@ async function blobToDataUrl(blob: Blob): Promise<string> {
 }
 
 const PROMPT = `Extract receipt data from this image. Reply with ONLY a JSON object (no markdown) shaped as:
-{"merchant": string|null, "date": "yyyy-mm-dd"|null, "total": number|null, "currency": string|null, "items": [{"name": string, "qty": number|null, "unitPrice": number|null}]|null}.
-Omit keys you cannot determine. Currency should be an ISO 4217 code.`
+{"merchant": string|null, "date": "yyyy-mm-dd"|null, "total": number|null, "currency": string|null, "items": [{"name": string, "qty": number|null, "unitPrice": number|null, "originalPrice": number|null}]|null}.
+Omit keys you cannot determine. originalPrice = the printed pre-discount price, only when a discount is shown. Currency should be an ISO 4217 code.`
 
 export function createOpenAiCompatibleProvider(): OcrProvider {
   return {
@@ -219,7 +219,17 @@ export function sanitizeReceipt(raw: ParsedReceipt): ParsedReceipt {
         name: i.name,
         qty: typeof i.qty === 'number' && i.qty > 0 ? i.qty : undefined,
         unitPrice: typeof i.unitPrice === 'number' && i.unitPrice >= 0 ? i.unitPrice : undefined,
+        // Only a genuine discount counts — originalPrice below unitPrice is
+        // noise, not a deal.
+        originalPrice:
+          typeof i.originalPrice === 'number' &&
+          i.originalPrice > 0 &&
+          typeof i.unitPrice === 'number' &&
+          i.originalPrice > i.unitPrice
+            ? i.originalPrice
+            : undefined,
       }))
+      .map(({ originalPrice, ...rest }) => ({ ...rest, ...(originalPrice !== undefined ? { originalPrice } : {}) }))
     if (items.length) out.items = items
   }
   return out
