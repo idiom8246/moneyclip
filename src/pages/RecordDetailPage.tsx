@@ -8,6 +8,7 @@ import { convert, formatMoney } from '../lib/currency'
 import { joinMerchantDate } from '../lib/format'
 import { blobUrl, releaseBlobUrl } from '../lib/images'
 import { deleteRecord, effectivePrice, setArchived, toggleFavorite } from '../lib/records'
+import { itemKey } from '../lib/analytics'
 import { categoryDisplayName } from '../lib/search'
 import { getSetting, setSetting } from '../lib/settings'
 
@@ -110,7 +111,19 @@ export function RecordDetailPage() {
       </div>
 
       <p className="mt-1 text-sm text-ink-soft dark:text-dusk-soft">
-        {joinMerchantDate(record)}
+        {record.merchant ? (
+          <>
+            <Link
+              to={`/store/${encodeURIComponent(record.merchant)}`}
+              className="underline decoration-line decoration-1 underline-offset-2 active:opacity-70 dark:decoration-dusk-line"
+            >
+              {record.merchant}
+            </Link>
+            {record.date && ` · ${record.date}`}
+          </>
+        ) : (
+          joinMerchantDate(record)
+        )}
       </p>
 
       <div className="mt-3 flex flex-wrap gap-2 text-sm">
@@ -140,7 +153,14 @@ export function RecordDetailPage() {
             <tbody>
               {record.items.map((item) => (
                 <tr key={item.id} className="border-b border-line/70 last:border-0 dark:border-dusk-line/70">
-                  <td className="py-2 pr-2">{item.name}</td>
+                  <td className="py-2 pr-2">
+                    <Link
+                      to={`/product/${encodeURIComponent(itemKey(item))}`}
+                      className="underline decoration-line decoration-1 underline-offset-2 active:opacity-70 dark:decoration-dusk-line"
+                    >
+                      {item.name}
+                    </Link>
+                  </td>
                   <td className="py-2 pr-2 text-right tabular-nums text-ink-soft dark:text-dusk-soft">
                     {item.qty ?? 1} × {item.unitPrice ?? '—'}
                   </td>

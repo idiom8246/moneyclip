@@ -68,6 +68,7 @@ export function RecordFormPage() {
   const [removedAttachmentIds, setRemovedAttachmentIds] = useState<string[]>([])
   const [scanning, setScanning] = useState(false)
   const [ocrBusy, setOcrBusy] = useState(false)
+  const ocrAbort = useRef<AbortController | null>(null)
   const [ocrFilled, setOcrFilled] = useState(false)
   const [saving, setSaving] = useState(false)
   const [titleError, setTitleError] = useState(false)
@@ -257,9 +258,11 @@ export function RecordFormPage() {
     const photo = photos[0]
     if (!photo) return
     setOcrBusy(true)
+    const controller = new AbortController()
+    ocrAbort.current = controller
     try {
       const provider = createOpenAiCompatibleProvider()
-      const receipt = await provider.extract({ image: photo.blob, config: ocrConfig })
+      const receipt = await provider.extract({ image: photo.blob, config: ocrConfig, signal: controller.signal })
       // Only fill fields the user hasn't touched (spec §6.2 — never overwrite).
       if (!merchant && receipt.merchant) setMerchant(receipt.merchant)
       if (!date && receipt.date) setDate(receipt.date)
@@ -276,12 +279,15 @@ export function RecordFormPage() {
       }
       setOcrFilled(true)
     } catch (err) {
+      // User-initiated cancel: form untouched, no failure noise.
+      if (controller.signal.aborted) return
       // Spec §6.2: never lose the user's form state — surface WHY it failed
       // (401/400/404/CORS) so config mistakes are self-diagnosable.
       const { key, detail } = describeOcrError(err)
       toast(t(key, { reason: detail }))
     } finally {
       setOcrBusy(false)
+      ocrAbort.current = null
     }
   }
 
@@ -379,15 +385,25 @@ export function RecordFormPage() {
                   onChange={onPickFiles}
                 />
               </div>
-              <GhostButton
-                type="button"
-                onClick={() => void runOcr()}
-                disabled={photos.length === 0 || ocrBusy}
-                className="mt-2 w-full whitespace-nowrap"
-              >
-                <IconSparkle className="h-5 w-5" />
-                {ocrBusy ? t('form.ocrWorking') : t('form.ocr')}
-              </GhostButton>
+              {ocrBusy ? (
+                <GhostButton
+                  type="button"
+                  onClick={() => ocrAbort.current?.abort()}
+                  className="mt-2 w-full whitespace-nowrap"
+                >
+                  {t('common.cancel')}
+                </GhostButton>
+              ) : (
+                <GhostButton
+                  type="button"
+                  onClick={() => void runOcr()}
+                  disabled={photos.length === 0}
+                  className="mt-2 w-full whitespace-nowrap"
+                >
+                  <IconSparkle className="h-5 w-5" />
+                  {t('form.ocr')}
+                </GhostButton>
+              )}
             </div>
             {/* (ii) 條碼 */}
             <div className="flex min-w-0 flex-col rounded-xl border border-line p-3 dark:border-dusk-line">

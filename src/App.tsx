@@ -6,6 +6,10 @@ import { RecordFormPage } from './pages/RecordFormPage'
 import { RecordDetailPage } from './pages/RecordDetailPage'
 import { SearchPage } from './pages/SearchPage'
 import { SettingsPage } from './pages/SettingsPage'
+import { DossierPage } from './pages/DossierPage'
+import { StorePage } from './pages/StorePage'
+import { TripPage } from './pages/TripPage'
+import { ReportsPage } from './pages/ReportsPage'
 
 export default function App() {
   return (
@@ -20,6 +24,10 @@ export default function App() {
             <Route path="/record/:id/edit" element={<RecordFormPage />} />
             <Route path="/search" element={<SearchPage />} />
             <Route path="/settings" element={<SettingsPage />} />
+            <Route path="/product/:key" element={<DossierPage />} />
+            <Route path="/store/:name" element={<StorePage />} />
+            <Route path="/trip/:tag" element={<TripPage />} />
+            <Route path="/reports" element={<ReportsPage />} />
           </Routes>
         </main>
         <BottomNav />

@@ -39,7 +39,7 @@ const receipt = {
   items: [{ name: '咖啡', qty: 1, unitPrice: 60 }],
 }
 
-async function extract(baseUrlOverride?: string) {
+async function extract(baseUrlOverride?: string, signal?: AbortSignal) {
   const config: OcrConfig = {
     baseUrl: baseUrlOverride ?? baseUrl,
     apiKey: 'test-key',
@@ -52,6 +52,7 @@ async function extract(baseUrlOverride?: string) {
   return createOpenAiCompatibleProvider().extract({
     image: new JsdumBlob(['fake-image-bytes'], { type: 'image/png' }),
     config,
+    signal,
   })
 }
 
@@ -170,6 +171,19 @@ describe('openai-compatible OCR provider (real-world endpoint shapes)', () => {
     }
     const origin = baseUrl.replace(/\/v1$/, '')
     await expect(extract(`${origin}/v1/responses`)).resolves.toMatchObject({ total: 195 })
+  })
+
+  it('aborts an in-flight request and rejects with AbortError', async () => {
+    handler = (_req, res) => {
+      const timer = setTimeout(() => {
+        res.writeHead(200, { 'content-type': 'application/json' })
+        res.end(JSON.stringify({ choices: [{ message: { content: '{}' } }] }))
+      }, 5000)
+      res.on('close', () => clearTimeout(timer))
+    }
+    const controller = new AbortController()
+    setTimeout(() => controller.abort(), 50)
+    await expect(extract(undefined, controller.signal)).rejects.toThrow(/abort/i)
   })
 
   it('throws a specific error when a proxy returns a 200 HTML page', async () => {

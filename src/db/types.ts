@@ -26,7 +26,11 @@ export interface RecordItem {
   name: string
   qty?: number
   unitPrice?: number
+  /** Printed pre-discount price — enables the savings report (never inferred). */
+  originalPrice?: number
   barcode?: string
+  /** Price frozen in the default currency at save time (drift-proof dossiers). */
+  baseUnitPrice?: number
 }
 
 /** `ConsumptionRecord` — the central entity (spec calls it `records`). */
@@ -35,6 +39,8 @@ export interface ConsumptionRecord {
   title: string
   /** Amount in original currency; optional by design (item-first, not amount-first). */
   price?: number
+  /** `price` frozen in the default currency at save time (never recomputed). */
+  basePrice?: number
   /** ISO 4217, e.g. HKD, JPY. */
   currency?: string
   /** ISO yyyy-mm-dd. */

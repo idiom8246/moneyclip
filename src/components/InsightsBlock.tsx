@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router-dom'
 import type { Category, ConsumptionRecord } from '../db/types'
 import { computeMonthInsight, formatMoney, TRIP_TAG_PREFIX } from '../lib/currency'
 import { categoryDisplayName } from '../lib/search'
@@ -12,13 +13,12 @@ import { IconChevronDown } from './icons'
 export function InsightsBlock({
   records,
   categories,
-  onTripClick,
 }: {
   records: ConsumptionRecord[]
   categories: Category[]
-  onTripClick: (tag: string) => void
 }) {
   const { t, i18n } = useTranslation()
+  const navigate = useNavigate()
   // Collapsed by default: a journal you read, not a dashboard you scan.
   // Remember the visitor's choice for next launch.
   const [open, setOpen] = useState(() => {
@@ -128,7 +128,7 @@ export function InsightsBlock({
                   <button
                     key={tag}
                     type="button"
-                    onClick={() => onTripClick(tag)}
+                    onClick={() => navigate(`/trip/${encodeURIComponent(tag)}`)}
                     className="rounded-full bg-terracotta-soft px-3 py-1 text-xs text-terracotta-deep dark:bg-dusk-line dark:text-dusk-ink"
                   >
                     {tag.replace(new RegExp(`^${TRIP_TAG_PREFIX}`), '')} · {formatMoney(Math.round(total), defaultCurrency, i18n.language)}

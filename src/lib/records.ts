@@ -7,6 +7,8 @@ import type {
   RecordItem,
 } from '../db/types'
 import { uid } from './uid'
+import { computeSnapshots } from './snapshots'
+import type { RateSource } from './currency'
 
 export type RecordInput = Omit<
   ConsumptionRecord,
@@ -17,9 +19,16 @@ export type RecordInput = Omit<
   status?: ConsumptionRecord['status']
 }
 
+/** Optional currency-snapshot context: base currency + available rates. */
+export interface SnapshotContext {
+  base: string
+  rateSource: RateSource
+}
+
 export async function createRecord(
   input: RecordInput,
   database: MoneyclipDB = defaultDb,
+  snap?: SnapshotContext,
 ): Promise<ConsumptionRecord> {
   const now = Date.now()
   const record: ConsumptionRecord = {
@@ -31,17 +40,62 @@ export async function createRecord(
     createdAt: now,
     updatedAt: now,
   }
-  await database.records.add(record)
-  return record
+  const withSnapshots = snap ? computeSnapshots(record, snap.base, snap.rateSource) : record
+  await database.records.add(withSnapshots)
+  return withSnapshots
 }
 
 export async function updateRecord(
   id: string,
   patch: Partial<Omit<ConsumptionRecord, 'id' | 'createdAt'>>,
   database: MoneyclipDB = defaultDb,
+  snap?: SnapshotContext,
 ): Promise<void> {
   // createdAt is preserved; only updatedAt moves (spec §4 records).
-  await database.records.update(id, { ...patch, updatedAt: Date.now() })
+  let next: Partial<ConsumptionRecord> & { updatedAt: number } = { ...patch, updatedAt: Date.now() }
+  if (snap && (patch.price !== undefined || patch.currency !== undefined || patch.items !== undefined)) {
+    const existing = await database.records.get(id)
+    if (existing) {
+      const merged = { ...existing, ...patch }
+      const withSnapshots = computeSnapshots(merged, snap.base, snap.rateSource)
+      next = {
+        ...next,
+        basePrice: withSnapshots.basePrice,
+        items: withSnapshots.items,
+      }
+    }
+  }
+  await database.records.update(id, next)
+}
+
+/**
+ * One-time lazy backfill: legacy foreign-currency records that never got a
+ * snapshot (rate was missing at save / imported / edited raw) are frozen
+ * with whatever rate is available NOW. Already-snapshotted records are
+ * never touched — history stays put.
+ */
+export async function backfillMissingSnapshots(
+  database: MoneyclipDB,
+  base: string,
+  rateSource: RateSource,
+): Promise<number> {
+  const baseUpper = base.toUpperCase()
+  const candidates = (await database.records.toArray()).filter(
+    (r) =>
+      r.basePrice === undefined &&
+      r.currency !== undefined &&
+      r.currency.toUpperCase() !== baseUpper &&
+      (r.price !== undefined || (r.items ?? []).some((i) => i.unitPrice !== undefined)),
+  )
+  let filled = 0
+  for (const rec of candidates) {
+    const withSnapshots = computeSnapshots(rec, base, rateSource)
+    if (withSnapshots.basePrice !== undefined || withSnapshots.items?.some((i) => i.baseUnitPrice !== undefined)) {
+      await database.records.put({ ...rec, ...withSnapshots, updatedAt: rec.updatedAt })
+      filled++
+    }
+  }
+  return filled
 }
 
 export async function toggleFavorite(

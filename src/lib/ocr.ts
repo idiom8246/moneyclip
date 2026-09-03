@@ -19,7 +19,7 @@ export interface ParsedReceipt {
 
 export interface OcrProvider {
   readonly name: string
-  extract(input: { image: Blob; config: OcrConfig }): Promise<ParsedReceipt>
+  extract(input: { image: Blob; config: OcrConfig; signal?: AbortSignal }): Promise<ParsedReceipt>
 }
 
 function toBase64(buf: ArrayBuffer): string {
@@ -46,7 +46,7 @@ Omit keys you cannot determine. Currency should be an ISO 4217 code.`
 export function createOpenAiCompatibleProvider(): OcrProvider {
   return {
     name: 'openai-compatible',
-    async extract({ image, config }): Promise<ParsedReceipt> {
+    async extract({ image, config, signal }): Promise<ParsedReceipt> {
       const baseUrl = normalizeBaseUrl(config.baseUrl)
       if (!baseUrl || !config.model) throw new Error('ocr-not-configured')
       const dataUrl = await blobToDataUrl(image)
@@ -61,8 +61,11 @@ export function createOpenAiCompatibleProvider(): OcrProvider {
       ]
       // Many OpenAI-compatible servers (Ollama, LM Studio, vLLM, proxies)
       // reject response_format with 400 — retry once without it.
-      let res = await chatRequest(baseUrl, config, messages, true)
-      if (res.status === 400) res = await chatRequest(baseUrl, config, messages, false)
+      let res = await chatRequest(baseUrl, config, messages, true, signal)
+      if (res.status === 400 && !signal?.aborted) {
+        res = await chatRequest(baseUrl, config, messages, false, signal)
+      }
+      if (signal?.aborted) throw new DOMException('Aborted', 'AbortError')
       if (!res.ok) {
         const detail = await responseErrorDetail(res)
         throw new Error(`ocr-failed:${res.status}${detail ? `: ${detail}` : ''}`)
@@ -123,6 +126,7 @@ async function chatRequest(
   config: OcrConfig,
   messages: unknown,
   withResponseFormat: boolean,
+  signal?: AbortSignal,
 ): Promise<Response> {
   const body: Record<string, unknown> = { model: config.model, messages }
   if (withResponseFormat) body.response_format = { type: 'json_object' }
@@ -133,6 +137,7 @@ async function chatRequest(
       ...(config.apiKey ? { authorization: `Bearer ${config.apiKey}` } : {}),
     },
     body: JSON.stringify(body),
+    signal,
   })
 }
 
