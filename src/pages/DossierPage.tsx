@@ -7,6 +7,7 @@ import { useCategories, useRateSource, useRecords, useSetting } from '../hooks'
 import { priceHistory } from '../lib/analytics'
 import { formatMoney } from '../lib/currency'
 import { addShoppingItem } from '../lib/shoppingList'
+import { addFromItem } from '../lib/inventory'
 import { useToast } from '../components/Toast'
 
 /** Product dossier: one item's price history across merchants and trips. */
@@ -67,19 +68,28 @@ export function DossierPage() {
           </div>
 
           {latest?.unitPrice !== undefined && (
-            <GhostButton
-              className="mt-2 w-full"
-              onClick={() => {
-                void addShoppingItem({
-                  name: dossier.name,
-                  estPrice: latest.unitPrice,
-                  estCurrency: latest.currency ?? defaultCurrency,
-                })
-                toast(t('list.added'))
-              }}
-            >
-              {t('list.addToList')}
-            </GhostButton>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <GhostButton
+                onClick={() => {
+                  void addShoppingItem({
+                    name: dossier.name,
+                    estPrice: latest.unitPrice,
+                    estCurrency: latest.currency ?? defaultCurrency,
+                  })
+                  toast(t('list.added'))
+                }}
+              >
+                {t('list.addToList')}
+              </GhostButton>
+              <GhostButton
+                onClick={() => {
+                  void addFromItem({ name: dossier.name, barcode: decoded.startsWith('bc:') ? decoded.slice(3) : undefined })
+                  toast(t('inventory.added'))
+                }}
+              >
+                {t('inventory.addToInventory')}
+              </GhostButton>
+            </div>
           )}
 
           <SectionCard title={t('dossier.purchases', { count: dossier.count })}>

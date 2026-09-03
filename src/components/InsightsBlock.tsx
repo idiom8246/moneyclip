@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import type { Category, ConsumptionRecord } from '../db/types'
 import { computeMonthInsight, formatMoney, TRIP_TAG_PREFIX } from '../lib/currency'
 import { categoryDisplayName } from '../lib/search'
-import { useRateSource, useSetting } from '../hooks'
+import { expiringSoon } from '../lib/inventory'
+import { useInventoryItems, useRateSource, useSetting } from '../hooks'
 import { IconChevronDown } from './icons'
 
 /**
@@ -46,6 +47,8 @@ export function InsightsBlock({
     () => computeMonthInsight(records, month, defaultCurrency, rateSource),
     [records, month, defaultCurrency, rateSource],
   )
+  const inventoryItems = useInventoryItems()
+  const expiring = useMemo(() => expiringSoon(inventoryItems ?? [], 3), [inventoryItems])
 
   const hasContent =
     insight.total > 0 || insight.topCategories.length > 0 || insight.tripTotals.length > 0
@@ -53,6 +56,20 @@ export function InsightsBlock({
   return (
     <section className="rounded-2xl bg-paper-raised p-4 shadow-sm shadow-ink/[0.04] ring-1 ring-line dark:bg-dusk-raised dark:ring-dusk-line dark:shadow-none" aria-label={t('collection.insights.title')}>
       <h2 className="sr-only">{t('collection.insights.title')}</h2>
+      {expiring.length > 0 && (
+        <Link
+          to="/inventory"
+          role="status"
+          className="mb-2 flex items-center justify-between gap-2 rounded-xl bg-terracotta-soft px-3 py-2 text-xs text-terracotta-deep dark:bg-dusk-line dark:text-dusk-ink"
+        >
+          <span className="min-w-0 truncate">
+            ⏳ {t('inventory.expiringSoon', { count: expiring.length })}:{' '}
+            {expiring.map((i) => i.name).join('、')}
+          </span>
+          <span className="shrink-0 tabular-nums">{expiring[0]?.expiresAt}</span>
+        </Link>
+      )}
+
       <button
         type="button"
         onClick={toggle}

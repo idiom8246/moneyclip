@@ -4,7 +4,8 @@ import { IconBasket, IconChart, IconGrid, IconPlus, IconSearch } from './icons'
 
 /**
  * Bottom 5-key nav (2.0 amendment to spec §5):
- * Collection | List | [+] Add | Search | Reports.
+ * Collection | Inventory | [+] Add | Search | Reports. The shopping list
+ * lives inside Inventory as a segmented toggle.
  */
 export function BottomNav() {
   const { t } = useTranslation()
@@ -25,9 +26,9 @@ export function BottomNav() {
             <span>{t('nav.collection')}</span>
           </NavLink>
 
-          <NavLink to="/list" className={({ isActive }) => item(isActive)}>
+          <NavLink to="/inventory" className={({ isActive }) => item(isActive)}>
             <IconBasket className="h-5 w-5" />
-            <span>{t('nav.list')}</span>
+            <span>{t('nav.inventory')}</span>
           </NavLink>
 
           <NavLink

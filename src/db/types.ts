@@ -119,6 +119,38 @@ export interface ProductCacheEntry {
   cachedAt: number
 }
 
+// ---------- inventory (2.0) ----------
+
+export type InventoryStatus = 'unopened' | 'opened' | 'finished' | 'expired'
+
+export interface InventoryItem {
+  id: string
+  name: string
+  barcode?: string
+  categoryId?: string | null
+  location?: string
+  status: InventoryStatus
+  qty: number
+  unit?: string
+  openedAt?: string
+  expiresAt?: string
+  /** Where it came from — the journal stays the source of truth. */
+  sourceRecordId?: string
+  sourceItemName?: string
+  note?: string
+  createdAt: number
+  updatedAt: number
+}
+
+export interface UsageEvent {
+  id: string
+  itemId: string
+  at: number
+  kind: 'opened' | 'used' | 'adjusted' | 'finished' | 'expired' | 'discarded'
+  amountPct?: number
+  note?: string
+}
+
 export interface RateCacheEntry {
   /** Base currency the rates were fetched against, e.g. "TWD". */
   base: string

@@ -1,11 +1,17 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react'
 
+interface ToastAction {
+  label: string
+  onClick: () => void
+}
+
 interface ToastMsg {
   id: number
   text: string
+  action?: ToastAction
 }
 
-const ToastCtx = createContext<(text: string) => void>(() => {})
+const ToastCtx = createContext<(text: string, action?: ToastAction) => void>(() => {})
 
 export function useToast() {
   return useContext(ToastCtx)
@@ -15,10 +21,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   const [toasts, setToasts] = useState<ToastMsg[]>([])
   const nextId = useRef(0)
 
-  const show = useCallback((text: string) => {
+  const show = useCallback((text: string, action?: ToastAction) => {
     const id = nextId.current++
-    setToasts((t) => [...t, { id, text }])
-    setTimeout(() => setToasts((t) => t.filter((m) => m.id !== id)), 3500)
+    setToasts((t) => [...t, { id, text, action }])
+    setTimeout(() => setToasts((t) => t.filter((m) => m.id !== id)), 4500)
   }, [])
 
   return (
@@ -29,9 +35,21 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div
             key={t.id}
             role="status"
-            className="animate-toast-in max-w-full rounded-full bg-ink/95 px-4 py-2.5 text-center text-sm font-medium text-paper shadow-xl shadow-ink/20 ring-1 ring-white/10 backdrop-blur dark:bg-paper/95 dark:text-ink dark:shadow-black/40"
+            className="animate-toast-in flex max-w-full items-center gap-3 rounded-full bg-ink/95 py-2.5 pl-4 pr-2.5 text-center text-sm font-medium text-paper shadow-xl shadow-ink/20 ring-1 ring-white/10 backdrop-blur dark:bg-paper/95 dark:text-ink dark:shadow-black/40"
           >
-            {t.text}
+            <span className="pointer-events-none">{t.text}</span>
+            {t.action && (
+              <button
+                type="button"
+                onClick={() => {
+                  t.action!.onClick()
+                  setToasts((all) => all.filter((m) => m.id !== t.id))
+                }}
+                className="shrink-0 rounded-full bg-paper/20 px-3 py-1 text-xs font-semibold text-paper active:scale-95 dark:bg-ink/10 dark:text-ink"
+              >
+                {t.action.label}
+              </button>
+            )}
           </div>
         ))}
       </div>

@@ -1,8 +1,11 @@
 import type {
   Category,
   ConsumptionRecord,
+  InventoryItem,
+  UsageEvent,
 } from '../db/types'
 import type { MoneyclipDB } from '../db/db'
+import type { ShoppingItem } from './shoppingList'
 
 /**
  * Export / import per spec §5.6.
@@ -20,12 +23,17 @@ export interface ExportedAttachment {
 }
 
 export interface ExportBundle {
-  version: 1
+  /** 1 = pre-2.0 bundle; 2 = includes shoppingList/inventory/usageEvents. */
+  version: 1 | 2
   exportedAt: string
   records: ConsumptionRecord[]
   categories: Category[]
   /** Attachment metadata is always included; image bytes only when requested (spec §5.6). */
   attachments: ExportedAttachment[]
+  /** 2.0 domains — optional so v1 bundles still import. */
+  shoppingList?: ShoppingItem[]
+  inventory?: InventoryItem[]
+  usageEvents?: UsageEvent[]
 }
 
 export async function blobToBase64(blob: Blob): Promise<string> {
@@ -50,17 +58,23 @@ export async function exportJSON(
   db: MoneyclipDB,
   opts: { includeImages?: boolean } = {},
 ): Promise<ExportBundle> {
-  const [records, categories, attachments] = await Promise.all([
+  const [records, categories, attachments, shoppingList, inventory, usageEvents] = await Promise.all([
     db.records.toArray(),
     db.categories.toArray(),
     db.attachments.toArray(),
+    db.shoppingList.toArray(),
+    db.inventory.toArray(),
+    db.usageEvents.toArray(),
   ])
   const bundle: ExportBundle = {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
     records,
     categories,
     attachments: [],
+    shoppingList,
+    inventory,
+    usageEvents,
   }
   bundle.attachments = await Promise.all(
     attachments.map(async (a) => ({
@@ -139,7 +153,7 @@ export async function importJSON(
   db: MoneyclipDB,
   bundle: ExportBundle,
 ): Promise<ImportResult> {
-  if (!bundle || bundle.version !== 1 || !Array.isArray(bundle.records)) {
+  if (!bundle || (bundle.version !== 1 && bundle.version !== 2) || !Array.isArray(bundle.records)) {
     throw new Error('invalid-export-bundle')
   }
   const errors: string[] = []
@@ -151,21 +165,37 @@ export async function importJSON(
   const categories = (bundle.categories ?? []).filter(
     (c): c is Category => !!c && typeof c.id === 'string' && typeof c.name === 'string',
   )
-  await db.transaction('rw', db.records, db.categories, db.attachments, async () => {
-    await db.categories.bulkPut(categories)
-    await db.records.bulkPut(records)
-    if (bundle.attachments) {
-      const restored = bundle.attachments
-        .filter((a) => a.blobBase64 && a.thumbBase64 && a.recordId)
-        .map((a) => ({
-          id: a.id,
-          recordId: a.recordId,
-          createdAt: a.createdAt,
-          blob: base64ToBlob(a.blobBase64!),
-          thumbBlob: base64ToBlob(a.thumbBase64!),
-        }))
-      await db.attachments.bulkPut(restored)
-    }
-  })
+  const shoppingList = (bundle.shoppingList ?? []).filter(
+    (i): i is ShoppingItem => !!i && typeof i.id === 'string' && typeof i.name === 'string',
+  )
+  const inventory = (bundle.inventory ?? []).filter(
+    (i): i is InventoryItem => !!i && typeof i.id === 'string' && typeof i.name === 'string',
+  )
+  const usageEvents = (bundle.usageEvents ?? []).filter(
+    (e): e is UsageEvent => !!e && typeof e.id === 'string' && typeof e.itemId === 'string',
+  )
+  await db.transaction(
+    'rw',
+    [db.records, db.categories, db.attachments, db.shoppingList, db.inventory, db.usageEvents],
+    async () => {
+      await db.categories.bulkPut(categories)
+      await db.records.bulkPut(records)
+      if (bundle.attachments) {
+        const restored = bundle.attachments
+          .filter((a) => a.blobBase64 && a.thumbBase64 && a.recordId)
+          .map((a) => ({
+            id: a.id,
+            recordId: a.recordId,
+            createdAt: a.createdAt,
+            blob: base64ToBlob(a.blobBase64!),
+            thumbBlob: base64ToBlob(a.thumbBase64!),
+          }))
+        await db.attachments.bulkPut(restored)
+      }
+      if (shoppingList.length) await db.shoppingList.bulkPut(shoppingList)
+      if (inventory.length) await db.inventory.bulkPut(inventory)
+      if (usageEvents.length) await db.usageEvents.bulkPut(usageEvents)
+    },
+  )
   return { records: records.length, categories: categories.length, errors }
 }

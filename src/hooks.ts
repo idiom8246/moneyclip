@@ -2,6 +2,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { db } from './db/db'
 import type { Attachment, Category, ConsumptionRecord } from './db/types'
 import type { ShoppingItem } from './lib/shoppingList'
+import type { InventoryItem } from './db/types'
 import { useSetting, getSetting } from './lib/settings'
 import { ensureRates } from './lib/rates'
 import type { RateSource } from './lib/currency'
@@ -82,6 +83,19 @@ export function usePagedList<T>(items: T[], pageSize = 100) {
 /** Shopping list, oldest first — unchecked on top when rendering. */
 export function useShoppingItems(): ShoppingItem[] | undefined {
   return useLiveQuery(() => db.shoppingList.orderBy('createdAt').toArray(), [])
+}
+
+/** All inventory items, newest first. */
+export function useInventoryItems(): InventoryItem[] | undefined {
+  return useLiveQuery(() => db.inventory.orderBy('createdAt').reverse().toArray(), [])
+}
+
+/** Usage timeline for one inventory item. */
+export function useUsageTimeline(itemId: string | undefined) {
+  return useLiveQuery(
+    () => (itemId ? db.usageEvents.where('itemId').equals(itemId).reverse().sortBy('at') : []),
+    [itemId],
+  )
 }
 
 /** Shared single URL-param setter for filter chips (Collection & Search). */

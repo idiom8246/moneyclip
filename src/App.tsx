@@ -1,4 +1,4 @@
-import { HashRouter, Route, Routes } from 'react-router-dom'
+import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { BottomNav } from './components/BottomNav'
 import { OfflineBanner } from './components/OfflineBanner'
 import { CollectionPage } from './pages/CollectionPage'
@@ -11,6 +11,8 @@ import { StorePage } from './pages/StorePage'
 import { TripPage } from './pages/TripPage'
 import { ReportsPage } from './pages/ReportsPage'
 import { ShoppingListPage } from './pages/ShoppingListPage'
+import { InventoryListPage } from './pages/InventoryListPage'
+import { InventoryItemPage } from './pages/InventoryItemPage'
 
 export default function App() {
   return (
@@ -30,6 +32,10 @@ export default function App() {
             <Route path="/store/:name" element={<StorePage />} />
             <Route path="/trip/:tag" element={<TripPage />} />
             <Route path="/reports" element={<ReportsPage />} />
+            <Route path="/inventory" element={<InventoryListPage />} />
+            <Route path="/inventory/:id" element={<InventoryItemPage />} />
+            {/* /list deep links moved under the 庫存 page's segmented toggle */}
+            <Route path="/list" element={<Navigate to="/inventory?tab=list" replace />} />
           </Routes>
         </main>
         <BottomNav />

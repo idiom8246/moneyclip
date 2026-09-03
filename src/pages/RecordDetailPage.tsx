@@ -9,6 +9,8 @@ import { joinMerchantDate } from '../lib/format'
 import { blobUrl, releaseBlobUrl } from '../lib/images'
 import { deleteRecord, effectivePrice, setArchived, toggleFavorite } from '../lib/records'
 import { itemKey } from '../lib/analytics'
+import { addFromItem } from '../lib/inventory'
+import { useToast } from '../components/Toast'
 import { categoryDisplayName } from '../lib/search'
 import { getSetting, setSetting } from '../lib/settings'
 
@@ -45,6 +47,15 @@ export function RecordDetailPage() {
 
   const price = record ? effectivePrice(record) : undefined
   const currency = record?.currency ?? defaultCurrency
+  const toast = useToast()
+  const trackItem = (name: string, barcode?: string) => {
+    if (!record) return
+    void addFromItem(
+      { name, barcode, categoryId: record.categoryId, sourceRecordId: record.id, sourceItemName: name },
+    ).then((added) => {
+      if (added) toast(t('inventory.added'))
+    })
+  }
 
   const converted = useMemo(() => {
     if (!record || price === undefined) return null
@@ -165,7 +176,20 @@ export function RecordDetailPage() {
                     {item.qty ?? 1} × {item.unitPrice ?? '—'}
                   </td>
                   <td className="py-2 text-right font-medium tabular-nums">
-                    {item.unitPrice !== undefined ? (item.qty ?? 1) * item.unitPrice : ''}
+                    <span className="inline-flex items-center justify-end gap-1.5">
+                      {item.unitPrice !== undefined ? (item.qty ?? 1) * item.unitPrice : ''}
+                      {item.name.trim() && record && (
+                        <button
+                          type="button"
+                          onClick={() => trackItem(item.name, item.barcode)}
+                          aria-label={`${t('inventory.addToInventory')}: ${item.name}`}
+                          title={t('inventory.addToInventory')}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-terracotta-soft text-sm font-semibold text-terracotta-deep active:scale-95 dark:bg-dusk-line dark:text-dusk-ink"
+                        >
+                          +
+                        </button>
+                      )}
+                    </span>
                   </td>
                 </tr>
               ))}

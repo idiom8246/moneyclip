@@ -325,7 +325,10 @@ export function RecordFormPage() {
         }
       }
       navigate(`/record/${recordId}`, { replace: true })
-      toast(t('form.saved'))
+      toast(t('form.saved'), {
+        label: t('inventory.addToInventory'),
+        onClick: () => navigate(`/record/${recordId}`),
+      })
     } catch (err) {
       // Spec §8: quota errors get an explicit message; form state is preserved.
       if (err instanceof DOMException && err.name === 'QuotaExceededError') {
