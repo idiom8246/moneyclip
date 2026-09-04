@@ -179,7 +179,9 @@ export interface TripReport {
   dateRange?: [string, string]
   byCurrency: Record<string, number>
   convertedTotal: number
+  convertedForeignCount: number
   unconvertedCount: number
+  unconvertedByCurrency: Record<string, number>
   byCategory: Array<{ categoryId: string | null; total: number }>
   savings: number
   savingsCount: number
@@ -224,8 +226,10 @@ export function tripReport(
     .sort((a, b) => (b.date ?? '').localeCompare(a.date ?? ''))
 
   const byCurrency: Record<string, number> = {}
+  const unconvertedByCurrency: Record<string, number> = {}
   const byCategory = new Map<string | null, number>()
   let convertedTotal = 0
+  let convertedForeignCount = 0
   let unconvertedCount = 0
   let minDate: string | undefined
   let maxDate: string | undefined
@@ -243,8 +247,11 @@ export function tripReport(
     else if (rec.basePrice !== undefined) converted = rec.basePrice
     else converted = convert(price, currency, base, rateSource)
 
-    if (converted === null) unconvertedCount++
-    else {
+    if (converted === null) {
+      unconvertedCount++
+      unconvertedByCurrency[currency] = (unconvertedByCurrency[currency] ?? 0) + price
+    } else {
+      if (currency !== base.toUpperCase()) convertedForeignCount++
       convertedTotal += converted
       byCategory.set(rec.categoryId ?? null, (byCategory.get(rec.categoryId ?? null) ?? 0) + converted)
     }
@@ -256,7 +263,9 @@ export function tripReport(
     dateRange: minDate ? [minDate, maxDate ?? minDate] : undefined,
     byCurrency,
     convertedTotal,
+    convertedForeignCount,
     unconvertedCount,
+    unconvertedByCurrency,
     byCategory: [...byCategory.entries()]
       .map(([categoryId, total]) => ({ categoryId, total }))
       .sort((a, b) => b.total - a.total),
@@ -270,7 +279,9 @@ export interface MonthReport {
   month: string
   total: number
   count: number
+  convertedForeignCount: number
   unconvertedCount: number
+  unconvertedByCurrency: Record<string, number>
   byCategory: Array<{ categoryId: string | null; total: number }>
   byMerchant: Array<{ merchant: string; total: number }>
   savings: number
@@ -286,7 +297,9 @@ export function reportMonth(
   const rows = records.filter((r) => r.status === 'active' && r.date?.startsWith(month))
   const byCategory = new Map<string | null, number>()
   const byMerchant = new Map<string, { merchant: string; total: number }>()
+  const unconvertedByCurrency: Record<string, number> = {}
   let total = 0
+  let convertedForeignCount = 0
   let unconvertedCount = 0
 
   for (const rec of rows) {
@@ -298,8 +311,11 @@ export function reportMonth(
     else if (rec.basePrice !== undefined) converted = rec.basePrice
     else converted = convert(price, currency, base, rateSource)
 
-    if (converted === null) unconvertedCount++
-    else {
+    if (converted === null) {
+      unconvertedCount++
+      if (price !== undefined) unconvertedByCurrency[currency] = (unconvertedByCurrency[currency] ?? 0) + price
+    } else {
+      if (currency !== base.toUpperCase()) convertedForeignCount++
       total += converted
       byCategory.set(rec.categoryId ?? null, (byCategory.get(rec.categoryId ?? null) ?? 0) + converted)
       const mKey = merchantKey(rec.merchant)
@@ -314,7 +330,9 @@ export function reportMonth(
     month,
     total,
     count: rows.length,
+    convertedForeignCount,
     unconvertedCount,
+    unconvertedByCurrency,
     byCategory: [...byCategory.entries()]
       .map(([categoryId, t]) => ({ categoryId, total: t }))
       .sort((a, b) => b.total - a.total),

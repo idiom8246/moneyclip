@@ -13,20 +13,20 @@ export default defineConfig({
     tailwindcss(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg', 'icons/icon.svg'],
+      includeAssets: ['favicon.svg', 'icons/icon.svg', 'icons/maskable.svg'],
       manifest: {
         name: 'Moneyclip',
         short_name: 'Moneyclip',
         description: 'Personal consumption journal & searchable archive',
-        theme_color: '#faf7f1',
-        background_color: '#faf7f1',
+        theme_color: '#fafaf7',
+        background_color: '#0a0f1e',
         display: 'standalone',
         start_url: '/',
         icons: [
           { src: 'icons/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },
           { src: 'icons/icon-512.png', sizes: '512x512', type: 'image/png' },
-          { src: 'icons/maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
+          { src: 'icons/maskable.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'maskable' },
         ],
       },
       workbox: {

@@ -2,9 +2,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
+import { SlidersHorizontal } from 'lucide-react'
+import { EmptyState } from '../components/EmptyState'
 import { RecordCard } from '../components/RecordCard'
-import { Chip, Field, fieldClass } from '../components/ui'
-import { IconSearch, IconSettings } from '../components/icons'
+import { Chip, Field, PageHeader, fieldClass } from '../components/ui'
+import { IconBookmark, IconSearch } from '../components/icons'
 import {
   useCategories, usePagedList, useRecentSearches, useRecords, useSetSearchParam, useSetting,
 } from '../hooks'
@@ -21,8 +23,9 @@ export function SearchPage() {
   const categories = useCategories() ?? []
   const defaultCurrency = useSetting('defaultCurrency')
   const recentSearches = useRecentSearches()
-  const [searchParams] = useSearchParams()
+  const [searchParams, setSearchParams] = useSearchParams()
   const setParam = useSetSearchParam()
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   const [input, setInput] = useState(searchParams.get('q') ?? '')
   const [query, setQuery] = useState(input)
@@ -48,6 +51,7 @@ export function SearchPage() {
   const { visible: paged, hasMore, loadMore } = usePagedList(results)
 
   const hasFilters = includeArchived || favoriteOnly || !!categoryId || !!saveReason || !!dateFrom || !!dateTo
+  const advancedFilterCount = Number(Boolean(categoryId)) + Number(Boolean(saveReason)) + Number(Boolean(dateFrom)) + Number(Boolean(dateTo))
   const started = query.trim().length > 0 || hasFilters
 
   /** Spec §5.4: remember successful searches (Enter or result click). */
@@ -62,16 +66,7 @@ export function SearchPage() {
 
   return (
     <div className="px-4">
-      <header className="sticky top-0 z-30 -mx-4 flex min-h-14 items-center justify-between border-b border-line/60 bg-paper/85 px-4 py-2 backdrop-blur-xl dark:border-dusk-line/60 dark:bg-dusk/85">
-        <h1 className="text-2xl font-bold tracking-tight">{t('search.title')}</h1>
-        <Link
-          to="/settings"
-          aria-label={t('settings.title')}
-          className="flex h-11 w-11 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-terracotta-soft/60 active:scale-95 dark:text-dusk-soft dark:hover:bg-dusk-line/60"
-        >
-          <IconSettings />
-        </Link>
-      </header>
+      <PageHeader title={t('search.title')} />
 
       <div className="relative mt-3">
         <IconSearch className="pointer-events-none absolute left-3.5 top-1/2 h-5 w-5 -translate-y-1/2 text-ink-soft dark:text-dusk-soft" />
@@ -87,35 +82,76 @@ export function SearchPage() {
         />
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-2">
-        <Chip active={favoriteOnly} onClick={() => setParam('fav', favoriteOnly ? null : '1')}>
-          ★ {t('search.favoriteOnly')}
+      <div className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        <Chip active={favoriteOnly} onClick={() => setParam('fav', favoriteOnly ? null : '1')} className="shrink-0">
+          <IconBookmark filled={favoriteOnly} className="h-3.5 w-3.5" /> {t('search.favoriteOnly')}
         </Chip>
-        <Chip active={includeArchived} onClick={() => setParam('arch', includeArchived ? null : '1')}>
+        <Chip active={includeArchived} onClick={() => setParam('arch', includeArchived ? null : '1')} className="shrink-0">
           {t('search.includeArchived')}
         </Chip>
-        {categories.map((c) => (
-          <Chip key={c.id} active={categoryId === c.id}
-            onClick={() => setParam('cat', categoryId === c.id ? null : c.id)}>
-            {c.icon} {categoryDisplayName(c, i18n.language)}
-          </Chip>
-        ))}
-        {SAVE_REASONS.map((r) => (
-          <Chip key={r} active={saveReason === r}
-            onClick={() => setParam('reason', saveReason === r ? null : r)}>
-            {t(`reasons.${r}`)}
-          </Chip>
-        ))}
+        <button
+          type="button"
+          onClick={() => setFiltersOpen((open) => !open)}
+          aria-expanded={filtersOpen}
+          className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all active:scale-95 ${
+            filtersOpen || advancedFilterCount > 0
+              ? 'bg-cobalt-soft text-cobalt-deep dark:bg-cobalt-lift/15 dark:text-cobalt-lift'
+              : 'glass-soft text-ink dark:text-dusk-ink'
+          }`}
+        >
+          <SlidersHorizontal className="h-4 w-4" aria-hidden />
+          {t('collection.moreFilters')}
+          {advancedFilterCount > 0 && <span className="tabular-nums">{advancedFilterCount}</span>}
+        </button>
       </div>
 
-      <div className="mt-3 grid grid-cols-2 gap-3">
-        <Field label={t('search.dateFrom')} className="min-w-0">
-          <input type="date" value={dateFrom ?? ''} onChange={(e) => setParam('from', e.target.value || null)} className={fieldClass} />
-        </Field>
-        <Field label={t('search.dateTo')} className="min-w-0">
-          <input type="date" value={dateTo ?? ''} onChange={(e) => setParam('to', e.target.value || null)} className={fieldClass} />
-        </Field>
-      </div>
+      {filtersOpen && (
+        <section className="glass-soft animate-rise-in mt-2 space-y-4 rounded-[20px] p-4" aria-label={t('collection.moreFilters')}>
+          <div>
+            <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-soft dark:text-dusk-soft">
+              {t('collection.filterByCategory')}
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {categories.map((c) => (
+                <Chip key={c.id} active={categoryId === c.id}
+                  onClick={() => setParam('cat', categoryId === c.id ? null : c.id)}>
+                  {c.icon} {categoryDisplayName(c, i18n.language)}
+                </Chip>
+              ))}
+            </div>
+          </div>
+          <div>
+            <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-soft dark:text-dusk-soft">
+              {t('collection.filterByReason')}
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {SAVE_REASONS.map((r) => (
+                <Chip key={r} active={saveReason === r}
+                  onClick={() => setParam('reason', saveReason === r ? null : r)}>
+                  {t(`reasons.${r}`)}
+                </Chip>
+              ))}
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label={t('search.dateFrom')} className="min-w-0">
+              <input type="date" value={dateFrom ?? ''} onChange={(e) => setParam('from', e.target.value || null)} className={fieldClass} />
+            </Field>
+            <Field label={t('search.dateTo')} className="min-w-0">
+              <input type="date" value={dateTo ?? ''} onChange={(e) => setParam('to', e.target.value || null)} className={fieldClass} />
+            </Field>
+          </div>
+          {hasFilters && (
+            <button
+              type="button"
+              onClick={() => setSearchParams({}, { replace: true })}
+              className="min-h-11 text-sm font-medium text-cobalt dark:text-cobalt-lift"
+            >
+              {t('collection.clearFilters')}
+            </button>
+          )}
+        </section>
+      )}
 
       {!started ? (
         <div className="space-y-6 py-8">
@@ -131,16 +167,27 @@ export function SearchPage() {
               </div>
             </section>
           )}
-          <section aria-label={t('search.recentViewed')}>
-            <h2 className="mb-2 text-sm font-semibold text-ink-soft dark:text-dusk-soft">
-              {t('search.recentViewed')}
-            </h2>
-            <RecentViewed byId={byId} />
-          </section>
-          <p className="px-2 pt-4 text-center text-ink-soft dark:text-dusk-soft">{t('search.initial')}</p>
+          <RecentViewed byId={byId} />
+          <EmptyState kind="search" title={t('search.initialTitle')} body={t('search.initial')} compact />
         </div>
       ) : results.length === 0 ? (
-        <p className="px-6 py-16 text-center text-ink-soft dark:text-dusk-soft">{t('search.noResults')}</p>
+        <EmptyState
+          kind="search"
+          title={t('search.noResultsTitle')}
+          body={t('search.noResults')}
+          action={
+            <button
+              type="button"
+              onClick={() => {
+                setInput('')
+                setSearchParams({}, { replace: true })
+              }}
+              className="btn-cobalt min-h-11 rounded-xl px-4 py-2 text-sm font-semibold"
+            >
+              {t('collection.clearFilters')}
+            </button>
+          }
+        />
       ) : (
         <>
           <p className="mt-4 text-xs text-ink-soft dark:text-dusk-soft">
@@ -154,7 +201,7 @@ export function SearchPage() {
               <button
                 type="button"
                 onClick={loadMore}
-                className="min-h-11 w-full rounded-xl border border-line py-2.5 text-sm text-ink-soft dark:border-dusk-line dark:text-dusk-soft"
+                className="glass-soft min-h-11 w-full rounded-xl py-2.5 text-sm text-ink-soft dark:text-dusk-soft"
               >
                 {t('collection.loadMore')}
               </button>
@@ -167,6 +214,7 @@ export function SearchPage() {
 }
 
 function RecentViewed({ byId }: { byId: Map<string, ConsumptionRecord> }) {
+  const { t } = useTranslation()
   const viewed = useLiveQuery(() => db.settings.get('recentViewed'), [])?.value as string[] | undefined
   if (!viewed?.length) return null
   const rows = viewed
@@ -175,18 +223,21 @@ function RecentViewed({ byId }: { byId: Map<string, ConsumptionRecord> }) {
     .slice(0, 5)
   if (!rows.length) return null
   return (
-    <ul className="space-y-1">
-      {rows.map((rec) => (
-        <li key={rec.id}>
-          <Link
-            to={`/record/${rec.id}`}
-            className="flex min-h-11 items-baseline gap-2 rounded-xl px-2 py-2 text-sm hover:bg-terracotta-soft/50 dark:hover:bg-dusk-line/50"
-          >
-            <span className="truncate text-ink dark:text-dusk-ink">{rec.title}</span>
-            <span className="shrink-0 text-xs text-ink-soft dark:text-dusk-soft">{rec.date ?? ''}</span>
-          </Link>
-        </li>
-      ))}
-    </ul>
+    <section aria-label={t('search.recentViewed')}>
+      <h2 className="mb-2 text-sm font-semibold text-ink-soft dark:text-dusk-soft">{t('search.recentViewed')}</h2>
+      <ul className="space-y-1">
+        {rows.map((rec) => (
+          <li key={rec.id}>
+            <Link
+              to={`/record/${rec.id}`}
+              className="flex min-h-11 items-baseline gap-2 rounded-xl px-2 py-2 text-sm hover:bg-cobalt-soft/50 dark:hover:bg-dusk-line/50"
+            >
+              <span className="truncate text-ink dark:text-dusk-ink">{rec.title}</span>
+              <span className="shrink-0 text-xs text-ink-soft dark:text-dusk-soft">{rec.date ?? ''}</span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }

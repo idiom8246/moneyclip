@@ -62,7 +62,7 @@ export function BarcodeScanner({
           onClick={onClose}
           aria-label={t('common.close')}
           autoFocus
-          className="flex h-11 w-11 items-center justify-center rounded-full text-white"
+          className="flex h-11 w-11 items-center justify-center rounded-full bg-white/10 text-white ring-1 ring-white/25 backdrop-blur transition-all active:scale-95"
         >
           <IconX />
         </button>

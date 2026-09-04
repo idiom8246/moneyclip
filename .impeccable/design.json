@@ -1,0 +1,161 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-03T00:00:00Z",
+  "title": "Design System: Moneyclip — Cobalt Plate",
+  "extensions": {
+    "colorMeta": {
+      "cobalt": { "role": "primary", "displayName": "Cobalt Plate Ink", "canonical": "#2148b8", "tonalRamp": ["#17337e", "#2148b8", "#4f6fd0", "#93abf2", "#c3d1f6", "#e5ebfa"] },
+      "cobalt-deep": { "role": "primary", "displayName": "Cobalt Press", "canonical": "#17337e", "tonalRamp": ["#0f2456", "#17337e", "#2148b8", "#4f6fd0", "#93abf2", "#e5ebfa"] },
+      "cobalt-soft": { "role": "primary", "displayName": "Cobalt Wash", "canonical": "#e5ebfa", "tonalRamp": ["#17337e", "#2148b8", "#4f6fd0", "#93abf2", "#c3d1f6", "#e5ebfa"] },
+      "cobalt-lift": { "role": "primary", "displayName": "Cobalt Lift (night ink)", "canonical": "#93abf2", "tonalRamp": ["#17337e", "#2148b8", "#4f6fd0", "#93abf2", "#c3d1f6", "#e5ebfa"] },
+      "signal-500": { "role": "secondary", "displayName": "Signal Red (control plate)", "canonical": "#c83232", "tonalRamp": ["#4a1313", "#7c1f1f", "#b02a2a", "#c83232", "#e5a09a", "#fbeeec"] },
+      "signal-600": { "role": "secondary", "displayName": "Signal Red Press", "canonical": "#b02a2a", "tonalRamp": ["#4a1313", "#7c1f1f", "#b02a2a", "#c83232", "#e5a09a", "#fbeeec"] },
+      "paper": { "role": "neutral", "displayName": "Neutral White", "canonical": "#fafaf7", "tonalRamp": ["#dfe5f0", "#fafaf7", "#ffffff"] },
+      "paper-raised": { "role": "neutral", "displayName": "Raised Paper", "canonical": "#ffffff", "tonalRamp": ["#dfe5f0", "#fafaf7", "#ffffff"] },
+      "ink": { "role": "neutral", "displayName": "Midnight Ink", "canonical": "#0f1d3d", "tonalRamp": ["#0f1d3d", "#4a5a80", "#dfe5f0"] },
+      "ink-soft": { "role": "neutral", "displayName": "Faded Ink", "canonical": "#4a5a80", "tonalRamp": ["#0f1d3d", "#4a5a80", "#dfe5f0"] },
+      "line": { "role": "neutral", "displayName": "Print Hairline", "canonical": "#dfe5f0", "tonalRamp": ["#dfe5f0", "#eef1f8", "#ffffff"] },
+      "dusk": { "role": "neutral", "displayName": "Cobalt Night", "canonical": "#0a0f1e", "tonalRamp": ["#0a0f1e", "#131c31", "#26344f", "#97a6c8", "#e9eefa"] },
+      "dusk-raised": { "role": "neutral", "displayName": "Night Raised", "canonical": "#131c31", "tonalRamp": ["#0a0f1e", "#131c31", "#26344f", "#97a6c8", "#e9eefa"] },
+      "dusk-ink": { "role": "neutral", "displayName": "Night Ink", "canonical": "#e9eefa", "tonalRamp": ["#0a0f1e", "#131c31", "#26344f", "#97a6c8", "#e9eefa"] },
+      "dusk-soft": { "role": "neutral", "displayName": "Night Soft Ink", "canonical": "#97a6c8", "tonalRamp": ["#0a0f1e", "#131c31", "#26344f", "#97a6c8", "#e9eefa"] },
+      "dusk-line": { "role": "neutral", "displayName": "Night Hairline", "canonical": "#26344f", "tonalRamp": ["#0a0f1e", "#131c31", "#26344f", "#97a6c8", "#e9eefa"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "Masthead", "purpose": "The 'Moneyclip' masthead only — Archivo bold, widest stretch (wdth 112)." },
+      "headline": { "displayName": "Money Hero", "purpose": "Hero money figures (report/trip totals, detail price) — Archivo bold, tabular, wdth 110." },
+      "title": { "displayName": "Page Title", "purpose": "Sticky page headers (20px semibold, wdth 110) and record titles (24px bold)." },
+      "body": { "displayName": "Body", "purpose": "All running copy and item titles — system CJK stack, never Archivo." },
+      "secondary": { "displayName": "Secondary", "purpose": "Merchant/date lines, captions, helper text — Faded/Night Soft Ink." },
+      "label": { "displayName": "Micro Label", "purpose": "Section-card titles and metric labels — 11px semibold uppercase, +0.08em." }
+    },
+    "shadows": [
+      { "name": "glass-edge", "value": "inset 0 1px 0 rgb(255 255 255 / 70%), inset 0 0 0 1px rgb(255 255 255 / 26%), inset 0 -1px 0 rgb(15 29 61 / 4%)", "purpose": "Specular inset stack carried by every glass surface (light values; dark swaps to white 12/7% + black 24%)." },
+      { "name": "glass-rest", "value": "0 1px 2px rgb(15 29 61 / 4%), 0 8px 24px -12px rgb(15 29 61 / 18%)", "purpose": "Cards and chips at rest." },
+      { "name": "glass-float", "value": "0 1px 2px rgb(15 29 61 / 5%), 0 16px 40px -16px rgb(15 29 61 / 28%)", "purpose": "Hovering chrome — headers and the bottom-nav capsule; card hover upgrade." },
+      { "name": "glass-deep", "value": "0 24px 64px -24px rgb(15 29 61 / 35%)", "purpose": "Dialogs and toasts on the deepest glass grade." },
+      { "name": "hairline-b", "value": "0 1px 0 var(--hairline)", "purpose": "Divider under sticky headers — hairlines are shadows, not borders." },
+      { "name": "btn-cobalt", "value": "inset 0 1.5px 0 rgb(255 255 255 / 28%), inset 0 0 0 1px rgb(255 255 255 / 10%), 0 1px 2px rgb(23 51 126 / 30%), 0 10px 24px -10px rgb(33 72 184 / 55%)", "purpose": "Primary action plate: specular lip + pressed-glass cobalt glow." }
+    ],
+    "motion": [
+      { "name": "rise-in", "value": "0.32s cubic-bezier(0.22, 1, 0.36, 1) both; from opacity 0, translateY(14px) scale(0.98), blur(6px)", "purpose": "The one authored entrance: surfaces settle into place with a breath of blur (nav, insights, report cards)." },
+      { "name": "toast-in", "value": "0.18s ease-out; from opacity 0, translateY(8px) scale(0.96)", "purpose": "The toast pops once — quick and done." },
+      { "name": "press", "value": "active:scale(0.90–0.99) over 150–300ms", "purpose": "Touch feedback by element size: pucks 0.90, buttons 0.97, chips 0.95, cards 0.99." },
+      { "name": "reduced-motion", "value": "@media (prefers-reduced-motion: reduce): animations none, transition-duration 0.01ms", "purpose": "All authored motion is removable without loss of function." }
+    ],
+    "breakpoints": [
+      { "name": "canvas", "value": "440px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Solid cobalt plate with a specular lip and pressed-glass glow — the only filled action style.",
+      "html": "<button class=\"ds-btn-primary\">儲存</button>",
+      "css": ".ds-btn-primary { background: var(--color-cobalt, #2148b8); color: #fff; border: none; border-radius: 12px; min-height: 44px; padding: 10px 16px; font: 600 14px/1.2 ui-sans-serif, system-ui, -apple-system, 'PingFang TC', sans-serif; box-shadow: inset 0 1.5px 0 rgb(255 255 255 / 28%), inset 0 0 0 1px rgb(255 255 255 / 10%), 0 1px 2px rgb(23 51 126 / 30%), 0 10px 24px -10px rgb(33 72 184 / 55%); transition: filter 0.2s, transform 0.15s; } .ds-btn-primary:hover { filter: brightness(1.1); } .ds-btn-primary:active { transform: scale(0.97); } .ds-btn-primary:disabled { opacity: 0.5; } .ds-btn-primary:focus-visible { outline: 2px solid var(--color-cobalt, #2148b8); outline-offset: 2px; }"
+    },
+    {
+      "name": "Ghost Button",
+      "kind": "button",
+      "refersTo": "button-ghost",
+      "description": "Translucent paper fill with a hairline inset ring for secondary actions.",
+      "html": "<button class=\"ds-btn-ghost\">取消</button>",
+      "css": ".ds-btn-ghost { background: rgb(255 255 255 / 40%); color: var(--color-ink, #0f1d3d); border: none; border-radius: 12px; min-height: 44px; padding: 8px 16px; font: 500 14px/1.2 ui-sans-serif, system-ui, -apple-system, 'PingFang TC', sans-serif; box-shadow: inset 0 0 0 1px var(--hairline, rgb(15 29 61 / 9%)); transition: background 0.2s, transform 0.15s; } .ds-btn-ghost:hover { background: rgb(255 255 255 / 70%); } .ds-btn-ghost:active { transform: scale(0.97); } .ds-btn-ghost:disabled { opacity: 0.5; } .ds-btn-ghost:focus-visible { outline: 2px solid var(--color-cobalt, #2148b8); outline-offset: 2px; }"
+    },
+    {
+      "name": "Filter Chip",
+      "kind": "chip",
+      "refersTo": "chip-active",
+      "description": "Pill filter — glass at rest, solid cobalt plate when pressed; always text, aria-pressed.",
+      "html": "<button class=\"ds-chip\" aria-pressed=\"false\">咖啡</button> <button class=\"ds-chip\" aria-pressed=\"true\">全部</button>",
+      "css": ".ds-chip { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; padding: 6px 14px; border: none; border-radius: 9999px; font: 500 14px/1.2 ui-sans-serif, system-ui, -apple-system, 'PingFang TC', sans-serif; color: var(--color-ink, #0f1d3d); background: rgb(255 255 255 / 55%); backdrop-filter: blur(12px) saturate(1.35); box-shadow: inset 0 1px 0 rgb(255 255 255 / 70%), inset 0 0 0 1px rgb(255 255 255 / 26%), inset 0 -1px 0 rgb(15 29 61 / 4%), 0 1px 2px rgb(15 29 61 / 4%), 0 8px 24px -12px rgb(15 29 61 / 18%); transition: all 0.2s; } .ds-chip:hover { filter: brightness(1.03); } .ds-chip:active { transform: scale(0.95); } .ds-chip[aria-pressed=\"true\"] { background: var(--color-cobalt, #2148b8); color: #fff; box-shadow: inset 0 1.5px 0 rgb(255 255 255 / 28%), inset 0 0 0 1px rgb(255 255 255 / 10%), 0 1px 2px rgb(23 51 126 / 30%), 0 10px 24px -10px rgb(33 72 184 / 55%); } .ds-chip:focus-visible { outline: 2px solid var(--color-cobalt, #2148b8); outline-offset: 2px; }"
+    },
+    {
+      "name": "Text Field",
+      "kind": "input",
+      "refersTo": "field",
+      "description": "Hairline well, not a second glass layer — translucent fill + 1px inset ring, cobalt focus.",
+      "html": "<input class=\"ds-input\" placeholder=\"品項名稱\" />",
+      "css": ".ds-input { width: 100%; min-height: 44px; padding: 10px 14px; border: none; border-radius: 12px; background: rgb(255 255 255 / 45%); color: var(--color-ink, #0f1d3d); font: 400 16px/1.4 ui-sans-serif, system-ui, -apple-system, 'PingFang TC', sans-serif; caret-color: var(--color-cobalt, #2148b8); box-shadow: inset 0 0 0 1px var(--hairline, rgb(15 29 61 / 9%)); transition: box-shadow 0.2s; } .ds-input::placeholder { color: var(--color-ink-soft, #4a5a80); } .ds-input:focus { box-shadow: inset 0 0 0 1.5px var(--color-cobalt, #2148b8), 0 1px 6px rgb(33 72 184 / 18%); } .ds-input:focus-visible { outline: 2px solid var(--color-cobalt, #2148b8); outline-offset: 2px; }"
+    },
+    {
+      "name": "Record Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "The journal entry: glass-soft plate, thumb square, title + tabular price pill; hover deepens the shadow.",
+      "html": "<a class=\"ds-card-record\" href=\"#\"><span class=\"ds-card-record-thumb\"><svg width=\"28\" height=\"28\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z\"/><path d=\"M14 2v4a2 2 0 0 0 2 2h4\"/><path d=\"M16 13H8\"/><path d=\"M16 17H8\"/></svg></span><span class=\"ds-card-record-body\"><span class=\"ds-card-record-title\">山田咖啡 耶加雪菲</span><span class=\"ds-card-record-sub\">誠品書店 · 2026-08-30</span></span><span class=\"ds-card-record-price\">$128</span></a>",
+      "css": ".ds-card-record { display: flex; gap: 12px; align-items: flex-start; padding: 12px; border-radius: 20px; text-decoration: none; color: var(--color-ink, #0f1d3d); background: rgb(255 255 255 / 55%); backdrop-filter: blur(12px) saturate(1.35); box-shadow: inset 0 1px 0 rgb(255 255 255 / 70%), inset 0 0 0 1px rgb(255 255 255 / 26%), inset 0 -1px 0 rgb(15 29 61 / 4%), 0 1px 2px rgb(15 29 61 / 4%), 0 8px 24px -12px rgb(15 29 61 / 18%); transition: box-shadow 0.2s, transform 0.15s; } .ds-card-record:hover { box-shadow: inset 0 1px 0 rgb(255 255 255 / 70%), inset 0 0 0 1px rgb(255 255 255 / 26%), inset 0 -1px 0 rgb(15 29 61 / 4%), 0 1px 2px rgb(15 29 61 / 5%), 0 16px 40px -16px rgb(15 29 61 / 28%); } .ds-card-record:active { transform: scale(0.99); } .ds-card-record-thumb { display: flex; align-items: center; justify-content: center; width: 64px; height: 64px; flex-shrink: 0; border-radius: 12px; overflow: hidden; background: rgb(229 235 250 / 50%); color: rgb(33 72 184 / 50%); } .ds-card-record-body { min-width: 0; flex: 1; } .ds-card-record-title { display: block; font-size: 16px; font-weight: 600; line-height: 1.5; letter-spacing: -0.025em; } .ds-card-record-sub { display: block; margin-top: 2px; font-size: 14px; color: var(--color-ink-soft, #4a5a80); } .ds-card-record-price { flex-shrink: 0; border-radius: 8px; background: rgb(255 255 255 / 70%); padding: 2px 6px; font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--color-ink, #0f1d3d); box-shadow: inset 0 0 0 1px var(--hairline, rgb(15 29 61 / 9%)); }"
+    },
+    {
+      "name": "Section Card",
+      "kind": "card",
+      "refersTo": "card",
+      "description": "Glass-soft group with an 11px uppercase label and a cobalt-wash icon square.",
+      "html": "<section class=\"ds-card-section\"><h2 class=\"ds-card-section-label\"><span class=\"ds-card-section-icon\"><svg width=\"16\" height=\"16\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 3v18h18\"/><path d=\"m19 9-5 5-4-4-3 3\"/></svg></span>本月分類</h2><div class=\"ds-card-section-body\">內容</div></section>",
+      "css": ".ds-card-section { border-radius: 20px; padding: 16px; background: rgb(255 255 255 / 55%); backdrop-filter: blur(12px) saturate(1.35); box-shadow: inset 0 1px 0 rgb(255 255 255 / 70%), inset 0 0 0 1px rgb(255 255 255 / 26%), inset 0 -1px 0 rgb(15 29 61 / 4%), 0 1px 2px rgb(15 29 61 / 4%), 0 8px 24px -12px rgb(15 29 61 / 18%); } .ds-card-section-label { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; font: 600 11px/1.2 ui-sans-serif, system-ui, -apple-system, 'PingFang TC', sans-serif; text-transform: uppercase; letter-spacing: 0.08em; color: var(--color-ink-soft, #4a5a80); } .ds-card-section-icon { display: inline-flex; align-items: center; justify-content: center; width: 28px; height: 28px; border-radius: 8px; background: var(--color-cobalt-soft, #e5ebfa); color: var(--color-cobalt, #2148b8); } .ds-card-section-body { font: 400 14px/1.5 ui-sans-serif, system-ui, -apple-system, 'PingFang TC', sans-serif; color: var(--color-ink, #0f1d3d); }"
+    },
+    {
+      "name": "Bottom Nav Capsule",
+      "kind": "nav",
+      "description": "Signature component: liquid-glass capsule, cobalt active lens, raised cobalt add-puck notched above.",
+      "html": "<nav class=\"ds-nav\"><button class=\"ds-nav-key\" aria-current=\"page\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect width=\"7\" height=\"7\" x=\"3\" y=\"3\" rx=\"1\"/><rect width=\"7\" height=\"7\" x=\"14\" y=\"3\" rx=\"1\"/><rect width=\"7\" height=\"7\" x=\"14\" y=\"14\" rx=\"1\"/><rect width=\"7\" height=\"7\" x=\"3\" y=\"14\" rx=\"1\"/></svg><span>收藏</span></button><button class=\"ds-nav-key\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"8\" cy=\"21\" r=\"1\"/><circle cx=\"19\" cy=\"21\" r=\"1\"/><path d=\"M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12\"/></svg><span>庫存</span></button><button class=\"ds-nav-add\" aria-label=\"新增\"><svg width=\"26\" height=\"26\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\" stroke-linecap=\"round\"><path d=\"M5 12h14\"/><path d=\"M12 5v14\"/></svg></button><button class=\"ds-nav-key\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.3-4.3\"/></svg><span>搜尋</span></button><button class=\"ds-nav-key\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M3 3v18h18\"/><path d=\"m19 9-5 5-4-4-3 3\"/></svg><span>報表</span></button></nav>",
+      "css": ".ds-nav { display: grid; grid-template-columns: repeat(5, 1fr); align-items: center; border-radius: 26px; padding: 6px 6px 4px; background: rgb(255 255 255 / 72%); backdrop-filter: blur(28px) saturate(1.8); box-shadow: inset 0 1px 0 rgb(255 255 255 / 70%), inset 0 0 0 1px rgb(255 255 255 / 26%), inset 0 -1px 0 rgb(15 29 61 / 4%), 0 1px 2px rgb(15 29 61 / 5%), 0 16px 40px -16px rgb(15 29 61 / 28%); } .ds-nav-key { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; min-height: 56px; min-width: 56px; border: none; background: transparent; border-radius: 16px; padding: 4px 4px; font: 500 11px/1.2 ui-sans-serif, system-ui, -apple-system, 'PingFang TC', sans-serif; color: var(--color-ink-soft, #4a5a80); transition: all 0.3s; } .ds-nav-key:active { transform: scale(0.95); } .ds-nav-key[aria-current=\"page\"] { background: rgb(229 235 250 / 80%); color: var(--color-cobalt, #2148b8); box-shadow: inset 0 1px 0 rgb(255 255 255 / 65%), inset 0 0 0 1px rgb(255 255 255 / 30%); } .ds-nav-add { justify-self: center; display: flex; align-items: center; justify-content: center; width: 56px; height: 56px; margin-top: -32px; border: 4px solid var(--color-paper, #fafaf7); border-radius: 9999px; background: var(--color-cobalt, #2148b8); color: #fff; box-shadow: inset 0 1.5px 0 rgb(255 255 255 / 28%), inset 0 0 0 1px rgb(255 255 255 / 10%), 0 1px 2px rgb(23 51 126 / 30%), 0 10px 24px -10px rgb(33 72 184 / 55%); transition: transform 0.2s; } .ds-nav-add:active { transform: scale(0.9); }"
+    },
+    {
+      "name": "Toast",
+      "kind": "custom",
+      "refersTo": "toast",
+      "description": "Deep-glass pill that pops once, with an optional cobalt-wash action chip.",
+      "html": "<div class=\"ds-toast\" role=\"status\"><span>已收藏</span><button class=\"ds-toast-action\">復原</button></div>",
+      "css": "@keyframes ds-toast-in { from { opacity: 0; transform: translateY(8px) scale(0.96); } } .ds-toast { display: flex; align-items: center; gap: 12px; max-width: 100%; border-radius: 9999px; padding: 10px 10px 10px 16px; background: rgb(255 255 255 / 88%); backdrop-filter: blur(40px) saturate(1.9); box-shadow: inset 0 1px 0 rgb(255 255 255 / 70%), inset 0 0 0 1px rgb(255 255 255 / 26%), inset 0 -1px 0 rgb(15 29 61 / 4%), 0 24px 64px -24px rgb(15 29 61 / 35%); font: 500 14px/1.4 ui-sans-serif, system-ui, -apple-system, 'PingFang TC', sans-serif; color: var(--color-ink, #0f1d3d); animation: ds-toast-in 0.18s ease-out; } .ds-toast-action { flex-shrink: 0; border: none; border-radius: 9999px; padding: 4px 12px; background: var(--color-cobalt-soft, #e5ebfa); color: var(--color-cobalt, #2148b8); font: 600 12px/1.4 ui-sans-serif, system-ui, -apple-system, 'PingFang TC', sans-serif; transition: transform 0.15s; } .ds-toast-action:active { transform: scale(0.95); }"
+    },
+    {
+      "name": "Destructive Button",
+      "kind": "button",
+      "refersTo": "destructive-confirm",
+      "description": "Signal-plate warn step: outline only; the solid red plate is reserved for the final confirm.",
+      "html": "<button class=\"ds-btn-danger\">刪除紀錄</button>",
+      "css": ".ds-btn-danger { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 10px 16px; border-radius: 12px; background: transparent; border: 1px solid var(--color-signal-300, #e5a09a); color: var(--color-signal-600, #b02a2a); font: 500 14px/1.2 ui-sans-serif, system-ui, -apple-system, 'PingFang TC', sans-serif; transition: background 0.2s, transform 0.15s; } .ds-btn-danger:hover { background: var(--color-signal-50, #fbeeec); } .ds-btn-danger:active { transform: scale(0.98); } .ds-btn-danger:focus-visible { outline: 2px solid var(--color-cobalt, #2148b8); outline-offset: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "Cobalt Plate",
+    "overview": "Moneyclip is a personal print journal of kept purchases, seen through liquid glass. One cobalt ink carries every surface: the app reads as a printed sheet — cobalt ink-washes at both horizons and a halftone dot field that fades out below the masthead — with iOS-26-style liquid-glass chrome floating over it. Density, weight, and tint steps of the same hue carry hierarchy; extra hues never do. The category-default dashboard-of-cards is refused: content is editorial, chrome is optical. The system is built for one canvas — iPhone 16 Pro Max class (440×956 CSS px), used on the sofa, on the commute, and in shops right after a purchase — so it is an Operate surface whose expression lives entirely in precise details: the specular lip on a button, the blur of a toast, the tabular numerals of a price. Glass here is a specific effect, not decoration: every translucent surface refracts the printed sheet behind it (fixed-attachment background), and inputs deliberately sit on glass as hairline wells rather than stacking a second blur layer. Dark mode is a first-class second substrate (\"cobalt night\"), not an afterthought: a .dark class on <html>, driven by a user setting (system / light / dark), swaps every token pair.",
+    "keyCharacteristics": [
+      "Mono-color editorial ink: Cobalt #2148B8 dominant plate; hierarchy via density, never hue count.",
+      "Signal Red #C83232 is a control plate — expiry and destructive only.",
+      "Liquid glass in four grades (soft 12px blur → deep 40px blur), always over the real printed background.",
+      "Archivo Variable (self-hosted, wdth axis) is the display voice for mastheads and money; system CJK stack carries all body copy.",
+      "Fixed mobile canvas (max-w 440px), 8px spacing rhythm, 44px touch floor.",
+      "Two complete token substrates (paper light / dusk dark) kept in lockstep."
+    ],
+    "rules": [
+      { "name": "The One-Ink Rule", "body": "Cobalt is the only structural ink. Hierarchy is carried by density, weight, and tint steps of the same hue — never by introducing hues. If a screen needs a new color, it needs a different tint step instead.", "section": "colors" },
+      { "name": "The Signal-Plate Rule", "body": "Signal Red is a control plate, not a color. It appears exclusively on expiry state and destructive flow (warn → confirm → execute). Any other use of red is a defect.", "section": "colors" },
+      { "name": "The Two-Substrate Rule", "body": "Every color ships as a light/dark pair (paper↔dusk, ink↔dusk-ink, line↔dusk-line, cobalt↔cobalt-lift). Nothing ships light-only; the night substrate is re-derived per token, not dimmed with an overlay.", "section": "colors" },
+      { "name": "The Display Voice Rule", "body": "Archivo Variable speaks only for the app's voice — mastheads and money. Body copy, labels, and chrome stay in the system CJK stack; Archivo is never set as body text.", "section": "typography" },
+      { "name": "The Numbers-First Rule", "body": "Every money figure is bold, tabular-nums, and honest: converted values carry ≈, unconverted ones are marked 未換算. Charts mirror every number as text; the SVG is decoration, the data survives without it.", "section": "typography" },
+      { "name": "The Real Refraction Rule", "body": "Glass always blurs something real: the fixed-attachment printed sheet (cobalt ink-washes + 1px/16px halftone field, masked out below 46% of the viewport). Chrome is never glass-over-nothing — if the background is missing, the glass is wrong.", "section": "elevation" },
+      { "name": "The No Nested Glass Rule", "body": "Inputs sit on glass as hairline wells — translucent solid fill plus a 1px inset ring — never as a second blur layer. Glass on glass reads as mud.", "section": "elevation" }
+    ],
+    "dos": [
+      "Do use the four glass grades for their jobs: glass-soft (cards, chips, rows), glass (generic surfaces), glass-strong (chrome: header, nav), glass-deep (dialogs, toast).",
+      "Do pair every color with its dark token and check both appearances; the night substrate is a re-derived palette, not a dimmer.",
+      "Do theme the browser surfaces: selection cobalt 22%, cobalt caret, thin scrollbars in the hairline color, 2px cobalt :focus-visible outline at 2px offset, patched autofill.",
+      "Do keep every interactive target ≥44px and give press feedback (active:scale-0.90–0.99 by element size).",
+      "Do convey status with a text label next to any dot or icon — color alone never carries status.",
+      "Do respect prefers-reduced-motion: both entrance animations off, all transitions clamped to 0.01ms.",
+      "Do feed the glass: any new full-screen surface keeps the fixed ink-wash + halftone background intact so chrome has something to refract."
+    ],
+    "donts": [
+      "Don't introduce a second structural hue; reach for a cobalt tint step instead (One-Ink Rule).",
+      "Don't use Signal Red for emphasis, links, badges, or \"hot\" decoration — expiry and destructive only (Signal-Plate Rule).",
+      "Don't nest glass on glass; fields on glass plates are hairline wells (No Nested Glass Rule).",
+      "Don't put glass chrome over a flat or empty background — without the printed sheet the refraction dies (Real Refraction Rule).",
+      "Don't set money without tabular-nums, or let an unconverted figure pose as converted (≈ or 未換算, always).",
+      "Don't stretch Archivo into body copy or set the masthead in the system face; the display voice is reserved for mastheads and money."
+    ]
+  }
+}

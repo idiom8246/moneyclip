@@ -6,7 +6,7 @@ import { computeMonthInsight, formatMoney, TRIP_TAG_PREFIX } from '../lib/curren
 import { categoryDisplayName } from '../lib/search'
 import { expiringSoon } from '../lib/inventory'
 import { useInventoryItems, useRateSource, useSetting } from '../hooks'
-import { IconChevronDown } from './icons'
+import { IconChevronDown, IconHourglass } from './icons'
 
 /**
  * Collapsible Insights — calm, text-first, not a dashboard (spec §5.1).
@@ -54,17 +54,17 @@ export function InsightsBlock({
     insight.total > 0 || insight.topCategories.length > 0 || insight.tripTotals.length > 0
 
   return (
-    <section className="rounded-2xl bg-paper-raised p-4 shadow-sm shadow-ink/[0.04] ring-1 ring-line dark:bg-dusk-raised dark:ring-dusk-line dark:shadow-none" aria-label={t('collection.insights.title')}>
+    <section className="glass-soft animate-rise-in rounded-[20px] p-4" aria-label={t('collection.insights.title')}>
       <h2 className="sr-only">{t('collection.insights.title')}</h2>
       {expiring.length > 0 && (
         <Link
           to="/inventory"
           role="status"
-          className="mb-2 flex items-center justify-between gap-2 rounded-xl bg-terracotta-soft px-3 py-2 text-xs text-terracotta-deep dark:bg-dusk-line dark:text-dusk-ink"
+          className="mb-2 flex items-center justify-between gap-2 rounded-xl bg-signal-50 px-3 py-2 text-xs font-medium text-signal-600 dark:bg-signal-500/15 dark:text-signal-300"
         >
-          <span className="min-w-0 truncate">
-            ⏳ {t('inventory.expiringSoon', { count: expiring.length })}:{' '}
-            {expiring.map((i) => i.name).join('、')}
+          <span className="min-w-0">
+            <IconHourglass className="mr-1 inline h-3.5 w-3.5" aria-hidden />
+            {t('inventory.expiringSoon', { count: expiring.length })}
           </span>
           <span className="shrink-0 tabular-nums">{expiring[0]?.expiresAt}</span>
         </Link>
@@ -77,11 +77,12 @@ export function InsightsBlock({
         aria-label={open ? t('collection.insights.collapse') : t('collection.insights.expand')}
         className="flex w-full min-h-11 items-center justify-between"
       >
-        <span className="text-xs font-semibold uppercase tracking-wider text-ink-soft dark:text-dusk-soft">
+        <span className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-soft dark:text-dusk-soft">
           {t('collection.insights.thisMonth')}
         </span>
         <span className="flex items-center gap-2">
-          <strong className="text-2xl font-bold tracking-tight tabular-nums">
+          <strong className="font-display text-[26px] font-bold leading-7 tracking-tight tabular-nums [font-stretch:110%]">
+            {(Object.keys(insight.foreignAmounts).length > 0 || insight.hadUnconverted) && '≈ '}
             {formatMoney(Math.round(insight.total), defaultCurrency, i18n.language)}
           </strong>
           <IconChevronDown className={`h-4 w-4 text-ink-soft transition-transform dark:text-dusk-soft ${open ? 'rotate-180' : ''}`} />
@@ -99,7 +100,7 @@ export function InsightsBlock({
             </p>
           )}
           {rateSource.cache && (
-            <p className="text-xs text-ink-soft/70 dark:text-dusk-soft/70">
+            <p className="text-xs text-ink-soft dark:text-dusk-soft">
               {t('collection.insights.ratesAsOf', {
                 date: new Date(rateSource.cache.fetchedAt).toISOString().slice(0, 10),
               })}
@@ -124,7 +125,7 @@ export function InsightsBlock({
                       <span className="w-20 truncate">
                         {cat ? `${cat.icon ?? ''} ${categoryDisplayName(cat, i18n.language)}` : '—'}
                       </span>
-                      <span className="h-1.5 rounded-full bg-terracotta/70" style={{ width: `${bar * 0.5}%` }} aria-hidden />
+                      <span className="h-1.5 rounded-full bg-cobalt dark:bg-cobalt-lift" style={{ width: `${bar * 0.5}%` }} aria-hidden />
                       <span className="text-xs text-ink-soft dark:text-dusk-soft">
                         {formatMoney(Math.round(total), defaultCurrency, i18n.language)}
                       </span>
@@ -146,7 +147,7 @@ export function InsightsBlock({
                     key={tag}
                     type="button"
                     onClick={() => navigate(`/trip/${encodeURIComponent(tag)}`)}
-                    className="rounded-full bg-terracotta-soft px-3 py-1 text-xs text-terracotta-deep dark:bg-dusk-line dark:text-dusk-ink"
+                    className="rounded-full bg-cobalt-soft px-3 py-1 text-xs font-medium text-cobalt-deep transition-all active:scale-95 dark:bg-cobalt-lift/15 dark:text-cobalt-lift"
                   >
                     {tag.replace(new RegExp(`^${TRIP_TAG_PREFIX}`), '')} · {formatMoney(Math.round(total), defaultCurrency, i18n.language)}
                   </button>

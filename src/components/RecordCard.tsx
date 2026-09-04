@@ -8,6 +8,7 @@ import { categoryDisplayName } from '../lib/search'
 import { useAttachments } from '../hooks'
 import { useEffect, useState } from 'react'
 import { blobUrl, releaseBlobUrl } from '../lib/images'
+import { IconBookmark, IconReceipt } from './icons'
 
 export function RecordCard({
   record,
@@ -36,33 +37,37 @@ export function RecordCard({
   return (
     <Link
       to={`/record/${record.id}`}
-      className="group flex gap-3 rounded-2xl bg-paper-raised p-3 shadow-sm shadow-ink/[0.04] ring-1 ring-line transition-all hover:shadow-md hover:ring-line/80 active:scale-[0.99] dark:bg-dusk-raised dark:ring-dusk-line dark:shadow-none dark:hover:ring-dusk-line/80"
+      className="group flex gap-3 rounded-[20px] glass-soft p-3 transition-all hover:shadow-[var(--glass-shadow)] active:scale-[0.99]"
     >
-      <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-terracotta-soft/50 ring-1 ring-line/60 dark:bg-dusk-line/50 dark:ring-dusk-line/60">
+      <div className={`flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-xl text-cobalt/50 dark:text-cobalt-lift/40 ${
+        thumb ? 'bg-[#f1eee4] p-1 dark:bg-dusk-line/80' : 'bg-cobalt-soft/50 dark:bg-cobalt-lift/10'
+      }`}>
         {thumb ? (
-          <img src={thumb} alt="" className="h-full w-full object-cover" loading="lazy" />
+          <img src={thumb} alt="" className="receipt-photo h-full w-full rounded-[9px] object-cover" loading="lazy" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center text-2xl" aria-hidden>
-            {category?.icon ?? '🗂️'}
-          </div>
+          <IconReceipt className="h-7 w-7" aria-hidden />
         )}
       </div>
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
           <h3 className="truncate text-base font-semibold leading-6 tracking-tight">{record.title}</h3>
           {price !== undefined && (
-            <span className="shrink-0 rounded-lg bg-paper px-1.5 py-0.5 text-sm font-semibold tabular-nums text-ink ring-1 ring-line/70 dark:bg-dusk dark:text-dusk-ink dark:ring-dusk-line">
+            <span className="shrink-0 rounded-lg bg-paper-raised/70 px-1.5 py-0.5 text-sm font-semibold tabular-nums text-ink shadow-[inset_0_0_0_1px_var(--hairline)] dark:bg-dusk/70 dark:text-dusk-ink">
               {formatMoney(price, record.currency ?? defaultCurrency, i18n.language)}
             </span>
           )}
         </div>
         <p className="mt-0.5 truncate text-sm text-ink-soft dark:text-dusk-soft">
-          {joinMerchantDate(record) || ' '}
+          {joinMerchantDate(record) || ' '}
         </p>
         <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs">
-          {record.favorite && <span aria-label={t('collection.favorites')} title={t('collection.favorites')}>★</span>}
+          {record.favorite && (
+            <span className="text-cobalt dark:text-cobalt-lift" aria-label={t('collection.favorites')} title={t('collection.favorites')}>
+              <IconBookmark filled className="h-3.5 w-3.5" />
+            </span>
+          )}
           {record.saveReason && (
-            <span className="rounded-full bg-terracotta-soft px-2 py-0.5 font-medium text-terracotta-deep dark:bg-dusk-line dark:text-dusk-ink">
+            <span className="rounded-full bg-cobalt-soft px-2 py-0.5 font-medium text-cobalt-deep dark:bg-cobalt-lift/15 dark:text-cobalt-lift">
               {t(`reasons.${record.saveReason}`)}
             </span>
           )}

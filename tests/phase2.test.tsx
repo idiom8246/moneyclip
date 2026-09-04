@@ -23,15 +23,17 @@ async function bootDb() {
 }
 
 describe('phase 2/3: nav + shopping list', () => {
-  it('bottom nav has 5 keys including 庫存 and 報表', async () => {
+  it('bottom nav has 5 keys; Search lives in the sticky app header', async () => {
     await bootDb()
     renderApp()
     const nav = await screen.findByRole('navigation', { name: 'Main' })
+    expect(within(nav).getByRole('link', { name: '發票' })).toBeInTheDocument()
     expect(within(nav).getByRole('link', { name: '收藏' })).toBeInTheDocument()
     expect(within(nav).getByRole('link', { name: '庫存' })).toBeInTheDocument()
     expect(within(nav).getByRole('link', { name: '新增' })).toBeInTheDocument()
-    expect(within(nav).getByRole('link', { name: '搜尋' })).toBeInTheDocument()
     expect(within(nav).getByRole('link', { name: '報表' })).toBeInTheDocument()
+    expect(within(nav).queryByRole('link', { name: '搜尋' })).not.toBeInTheDocument()
+    expect(screen.getByRole('link', { name: '搜尋' })).toBeInTheDocument()
   })
 
   it('adds, checks and clears list items via the 庫存 page toggle', async () => {

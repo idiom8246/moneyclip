@@ -3,7 +3,9 @@
  * SVG is decoration, the data must survive without it (a11y).
  */
 
-const PIE_COLORS = ['#c15e3c', '#a34b2f', '#d9784f', '#78716c', '#57534e', '#e0cfc4']
+/* One ink, many densities — the mono-color plate ramp. Slate stands in
+   only as the neutral "everything else" step. */
+const PIE_COLORS = ['#2148b8', '#17337e', '#4f6fd0', '#93abf2', '#c3d1f6', '#4a5a80']
 
 export interface PieSlice {
   label: string
@@ -45,7 +47,7 @@ export function Pie({
         className="shrink-0"
       >
         {total <= 0 ? (
-          <circle cx={cx} cy={cx} r={r} fill="var(--color-terracotta-soft)" />
+          <circle cx={cx} cy={cx} r={r} fill="var(--chart-hole-soft)" />
         ) : (
           slices.map((s, i) => {
             const frac = s.value / total
@@ -60,8 +62,8 @@ export function Pie({
             )
           })
         )}
-        {/* donut hole */}
-        <circle cx={cx} cy={cx} r={r * 0.55} fill="var(--color-paper-raised)" />
+        {/* donut hole — matches the glass card it sits on */}
+        <circle cx={cx} cy={cx} r={r * 0.55} fill="var(--chart-hole)" />
       </svg>
       <ul className="min-w-0 flex-1 space-y-1.5 text-sm">
         {slices.map((s, i) => (
@@ -94,9 +96,9 @@ export function Bars({ rows, format }: { rows: BarRow[]; format: (value: number)
       {rows.map((r) => (
         <li key={r.label} className="flex items-center gap-2">
           <span className="w-20 shrink-0 truncate" title={r.label}>{r.label}</span>
-          <span className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-terracotta-soft/60 dark:bg-dusk-line">
+          <span className="h-2 min-w-0 flex-1 overflow-hidden rounded-full bg-cobalt-soft/60 dark:bg-dusk-line">
             <span
-              className="block h-full rounded-full bg-terracotta/80"
+              className="block h-full rounded-full bg-cobalt dark:bg-cobalt-lift"
               style={{ width: `${Math.max(4, (r.value / max) * 100)}%` }}
             />
           </span>
@@ -106,5 +108,61 @@ export function Bars({ rows, format }: { rows: BarRow[]; format: (value: number)
         </li>
       ))}
     </ul>
+  )
+}
+
+export interface SparkPoint {
+  label: string
+  value: number
+}
+
+/** Compact price-history step line. Min/max numbers remain in the adjacent stat tiles. */
+export function PriceSparkline({ points, ariaLabel }: { points: SparkPoint[]; ariaLabel: string }) {
+  if (points.length < 2) return null
+  const width = 320
+  const height = 104
+  const padX = 12
+  const padY = 12
+  const min = Math.min(...points.map((point) => point.value))
+  const max = Math.max(...points.map((point) => point.value))
+  const range = Math.max(max - min, 1)
+  const coords = points.map((point, index) => ({
+    ...point,
+    x: padX + (index / (points.length - 1)) * (width - padX * 2),
+    y: padY + ((max - point.value) / range) * (height - padY * 2),
+  }))
+  let d = `M ${coords[0].x} ${coords[0].y}`
+  for (let index = 1; index < coords.length; index++) {
+    const prev = coords[index - 1]
+    const point = coords[index]
+    const mid = (prev.x + point.x) / 2
+    d += ` H ${mid} V ${point.y} H ${point.x}`
+  }
+  const minIndex = points.findIndex((point) => point.value === min)
+  const maxIndex = points.findIndex((point) => point.value === max)
+
+  return (
+    <div>
+      <svg viewBox={`0 0 ${width} ${height}`} role="img" aria-label={ariaLabel} className="h-28 w-full overflow-visible">
+        <path d={`M ${padX} ${height - padY} H ${width - padX}`} stroke="var(--hairline)" strokeWidth="1" />
+        <path d={d} fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="text-cobalt dark:text-cobalt-lift" />
+        {coords.map((point, index) => (
+          <circle
+            key={`${point.label}-${index}`}
+            cx={point.x}
+            cy={point.y}
+            r={index === minIndex || index === maxIndex ? 4.5 : 2.5}
+            fill="var(--chart-hole)"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            className="text-cobalt dark:text-cobalt-lift"
+          />
+        ))}
+      </svg>
+      <div className="-mt-1 flex justify-between text-[11px] tabular-nums text-ink-soft dark:text-dusk-soft">
+        <span>{points[0].label}</span>
+        <span>{points[points.length - 1].label}</span>
+      </div>
+    </div>
   )
 }

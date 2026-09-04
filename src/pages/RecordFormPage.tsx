@@ -348,12 +348,12 @@ export function RecordFormPage() {
         onBack={() => navigate(-1)}
       />
 
-      <div className="space-y-5 pb-8">
+      <div className="space-y-5 pb-44">
         {/* Section A: 掃描/上載 — two obvious sub-options side by side */}
         <SectionCard title={t('form.sectionCapture')} icon={<IconCamera />}>
           <div className="grid grid-cols-2 gap-3">
             {/* (i) 發票相片: photo picker strip + OCR */}
-            <div className="min-w-0 rounded-xl border border-line p-3 dark:border-dusk-line">
+            <div className="glass-soft min-w-0 rounded-2xl p-3">
               <span className="mb-2 block text-sm font-medium">{t('form.photoOcr')}</span>
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {photos.map((p) => (
@@ -409,7 +409,7 @@ export function RecordFormPage() {
               )}
             </div>
             {/* (ii) 條碼 */}
-            <div className="flex min-w-0 flex-col rounded-xl border border-line p-3 dark:border-dusk-line">
+            <div className="glass-soft flex min-w-0 flex-col rounded-2xl p-3">
               <span className="mb-2 block text-sm font-medium">{t('form.barcodeOption')}</span>
               <p className="text-xs text-ink-soft dark:text-dusk-soft">{t('barcode.scanning')}</p>
               <GhostButton
@@ -422,7 +422,7 @@ export function RecordFormPage() {
             </div>
           </div>
           {ocrFilled && (
-            <p role="status" className="mt-3 rounded-xl bg-terracotta-soft px-3 py-2 text-sm text-terracotta-deep dark:bg-dusk-line dark:text-dusk-ink">
+            <p role="status" className="mt-3 rounded-xl bg-cobalt-soft px-3 py-2 text-sm font-medium text-cobalt-deep dark:bg-cobalt-lift/15 dark:text-cobalt-lift">
               ✦ {t('form.ocrFilled')}
             </p>
           )}
@@ -432,7 +432,7 @@ export function RecordFormPage() {
         <DisclosureCard title={t('form.manualEntry')} icon={<Pencil className="h-4 w-4" strokeWidth={1.8} />} defaultOpen>
           <div className="space-y-3">
             {items.map((item) => (
-              <div key={item.id} className="rounded-lg bg-paper p-2.5 ring-1 ring-line dark:bg-dusk dark:ring-dusk-line">
+              <div key={item.id} className="rounded-xl bg-paper-raised/70 p-2.5 shadow-[inset_0_0_0_1px_var(--hairline)] dark:bg-dusk/60">
                 <div className="flex items-center gap-2">
                   <input
                     value={item.name}
@@ -445,7 +445,7 @@ export function RecordFormPage() {
                     type="button"
                     onClick={() => setItems((prev) => prev.filter((x) => x.id !== item.id))}
                     aria-label={t('common.delete')}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-ink-soft hover:bg-terracotta-soft/60 dark:text-dusk-soft dark:hover:bg-dusk-line/60"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg text-ink-soft hover:bg-cobalt-soft/60 dark:text-dusk-soft dark:hover:bg-dusk-line/60"
                   >
                     <IconX className="h-4 w-4" />
                   </button>
@@ -503,9 +503,9 @@ export function RecordFormPage() {
             placeholder={t('form.titlePlaceholder')}
             required
             aria-invalid={titleError}
-            className={`${fieldClass} text-lg font-semibold ${titleError ? '!border-red-500' : ''}`}
+            className={`${fieldClass} text-lg font-semibold ${titleError ? '!ring-2 !ring-signal-500/60' : ''}`}
           />
-          {titleError && <p className="mt-1 text-sm text-red-600">{t('form.titleRequired')}</p>}
+          {titleError && <p className="mt-1 text-sm text-signal-600">{t('form.titleRequired')}</p>}
         </Field>
 
         {/* Price + currency */}
@@ -597,7 +597,7 @@ export function RecordFormPage() {
       </div>
 
       {/* Sticky thumb-zone save — the primary action lives where thumbs are */}
-      <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] z-20 -mx-4 mt-4 border-t border-line/60 bg-paper/90 px-4 py-3 backdrop-blur-xl dark:border-dusk-line/60 dark:bg-dusk/90">
+      <div className="sticky bottom-[calc(env(safe-area-inset-bottom)+5.5rem)] z-20 -mx-4 mt-4 bg-paper/80 px-4 py-3 backdrop-blur-xl [box-shadow:0_-1px_0_var(--hairline)] dark:bg-dusk/80">
         <PrimaryButton onClick={onSave} disabled={saving} className="min-h-12 w-full text-base">
           {saving ? t('form.saving') : t('common.save')}
         </PrimaryButton>

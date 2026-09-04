@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router-dom'
 import { PageHeader } from '../components/ui'
-import { IconStar, IconTrash, IconArchive } from '../components/icons'
+import { IconArchive, IconBookmark, IconPackagePlus, IconTrash } from '../components/icons'
 import { useAttachments, useCategories, useRateSource, useRecord, useSetting } from '../hooks'
 import { convert, formatMoney } from '../lib/currency'
 import { joinMerchantDate } from '../lib/format'
@@ -65,6 +65,8 @@ export function RecordDetailPage() {
 
   if (record === undefined) return null
   const category = categories.find((c) => c.id === record.categoryId)
+  const tripTags = record.tags.filter((tag) => tag.startsWith('trip:'))
+  const productItems = (record.items ?? []).filter((item) => item.name.trim()).slice(0, 4)
 
   const openLightbox = async (index: number) => {
     const att = attachments?.[index]
@@ -89,10 +91,10 @@ export function RecordDetailPage() {
               key={src}
               type="button"
               onClick={() => void openLightbox(i)}
-              className="shrink-0 overflow-hidden rounded-2xl focus-visible:outline-terracotta"
+              className="shrink-0 overflow-hidden rounded-2xl bg-[#f1eee4] p-1 focus-visible:outline-cobalt dark:bg-dusk-line/80"
               aria-label={`${t('form.photos')} ${i + 1}`}
             >
-              <img src={src} alt="" className="h-56 w-auto object-cover" />
+              <img src={src} alt="" className="receipt-photo h-56 w-auto rounded-xl object-cover" />
             </button>
           ))}
         </div>
@@ -100,22 +102,22 @@ export function RecordDetailPage() {
 
       <div className="mt-2 flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold leading-tight">{record.title}</h2>
+          <h2 className="font-display text-2xl font-bold leading-tight tracking-tight">{record.title}</h2>
           {record.status === 'archived' && (
-            <span className="mt-1 inline-block rounded-full bg-terracotta-soft px-2 py-0.5 text-xs text-terracotta-deep dark:bg-dusk-line dark:text-dusk-ink">
+            <span className="mt-1 inline-block rounded-full bg-cobalt-soft px-2 py-0.5 text-xs font-medium text-cobalt-deep dark:bg-cobalt-lift/15 dark:text-cobalt-lift">
               {t('detail.archived')}
             </span>
           )}
         </div>
         {price !== undefined && (
           <div className="text-right">
-            <p className="text-xl font-bold tabular-nums">{formatMoney(price, currency, i18n.language)}</p>
+            <p className="font-display text-[26px] font-bold leading-8 tabular-nums [font-stretch:110%]">{formatMoney(price, currency, i18n.language)}</p>
             {converted !== null ? (
               <p className="text-sm text-ink-soft dark:text-dusk-soft">
                 {t('detail.approxConverted', { amount: formatMoney(Math.round(converted), defaultCurrency, i18n.language) })}
               </p>
             ) : currency.toUpperCase() !== defaultCurrency.toUpperCase() ? (
-              <p className="text-xs text-ink-soft/70 dark:text-dusk-soft/70">({t('common.unconverted')})</p>
+              <p className="text-xs text-ink-soft dark:text-dusk-soft">({t('common.unconverted')})</p>
             ) : null}
           </div>
         )}
@@ -139,17 +141,17 @@ export function RecordDetailPage() {
 
       <div className="mt-3 flex flex-wrap gap-2 text-sm">
         {record.saveReason && (
-          <span className="rounded-full bg-terracotta-soft px-3 py-1 text-terracotta-deep dark:bg-dusk-line dark:text-dusk-ink">
+          <span className="rounded-full bg-cobalt-soft px-3 py-1 font-medium text-cobalt-deep dark:bg-cobalt-lift/15 dark:text-cobalt-lift">
             {t(`reasons.${record.saveReason}`)}
           </span>
         )}
         {category && (
-          <span className="rounded-full bg-terracotta-soft px-3 py-1 text-terracotta-deep dark:bg-dusk-line dark:text-dusk-ink">
+          <span className="rounded-full bg-cobalt-soft px-3 py-1 font-medium text-cobalt-deep dark:bg-cobalt-lift/15 dark:text-cobalt-lift">
             {category.icon} {categoryDisplayName(category, i18n.language)}
           </span>
         )}
         {record.tags.map((tag) => (
-          <span key={tag} className="rounded-full border border-line px-3 py-1 text-ink-soft dark:border-dusk-line dark:text-dusk-soft">
+          <span key={tag} className="rounded-full px-3 py-1 text-ink-soft shadow-[inset_0_0_0_1px_var(--hairline)] dark:text-dusk-soft">
             #{tag}
           </span>
         ))}
@@ -184,9 +186,9 @@ export function RecordDetailPage() {
                           onClick={() => trackItem(item.name, item.barcode)}
                           aria-label={`${t('inventory.addToInventory')}: ${item.name}`}
                           title={t('inventory.addToInventory')}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-terracotta-soft text-sm font-semibold text-terracotta-deep active:scale-95 dark:bg-dusk-line dark:text-dusk-ink"
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-cobalt-soft text-sm font-semibold text-cobalt-deep active:scale-95 dark:bg-cobalt-lift/15 dark:text-cobalt-lift"
                         >
-                          +
+                          <IconPackagePlus className="h-4 w-4" />
                         </button>
                       )}
                     </span>
@@ -201,13 +203,49 @@ export function RecordDetailPage() {
       {record.note && (
         <section className="mt-5">
           <h3 className="mb-1 text-xs font-semibold uppercase tracking-wider text-ink-soft dark:text-dusk-soft">{t('detail.note')}</h3>
-          <p className="whitespace-pre-wrap rounded-2xl bg-paper-raised p-4 shadow-sm shadow-ink/[0.04] ring-1 ring-line dark:bg-dusk-raised dark:ring-dusk-line dark:shadow-none">
+          <p className="glass-soft whitespace-pre-wrap rounded-[20px] p-4">
             {record.note}
           </p>
         </section>
       )}
 
-      <p className="mt-5 text-xs text-ink-soft/70 dark:text-dusk-soft/70">
+      {(record.merchant || productItems.length > 0 || tripTags.length > 0) && (
+        <section className="glass-soft mt-5 rounded-[20px] p-4">
+          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-soft dark:text-dusk-soft">
+            {t('detail.related')}
+          </h3>
+          <div className="flex flex-wrap gap-2">
+            {record.merchant && (
+              <Link
+                to={`/store/${encodeURIComponent(record.merchant)}`}
+                className="inline-flex min-h-11 items-center rounded-full bg-cobalt-soft px-3 text-sm font-medium text-cobalt-deep dark:bg-cobalt-lift/15 dark:text-cobalt-lift"
+              >
+                {t('store.title')} · {record.merchant}
+              </Link>
+            )}
+            {productItems.map((item) => (
+              <Link
+                key={item.id}
+                to={`/product/${encodeURIComponent(itemKey(item))}`}
+                className="inline-flex min-h-11 items-center rounded-full px-3 text-sm shadow-[inset_0_0_0_1px_var(--hairline)]"
+              >
+                {t('dossier.title')} · {item.name}
+              </Link>
+            ))}
+            {tripTags.map((tag) => (
+              <Link
+                key={tag}
+                to={`/trip/${encodeURIComponent(tag)}`}
+                className="inline-flex min-h-11 items-center rounded-full px-3 text-sm shadow-[inset_0_0_0_1px_var(--hairline)]"
+              >
+                {t('breadcrumbs.trip')} · {tag.replace(/^trip:/, '')}
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <p className="mt-5 text-xs text-ink-soft dark:text-dusk-soft">
         {t('detail.createdAt', { date: new Date(record.createdAt).toLocaleDateString(i18n.language) })}
         {' · '}
         {t('detail.updatedAt', { date: new Date(record.updatedAt).toLocaleDateString(i18n.language) })}
@@ -216,7 +254,7 @@ export function RecordDetailPage() {
       <div className="mt-6 grid grid-cols-2 gap-3">
         <Link
           to={`/record/${record.id}/edit`}
-          className="flex min-h-12 items-center justify-center rounded-xl bg-gradient-to-b from-terracotta to-terracotta-deep px-4 py-2.5 font-semibold text-paper shadow-md shadow-terracotta/25 transition-all hover:brightness-105 active:scale-[0.98]"
+          className="btn-cobalt flex min-h-12 items-center justify-center rounded-xl px-4 py-2.5 font-semibold transition-all hover:brightness-110 active:scale-[0.98]"
         >
           {t('common.edit')}
         </Link>
@@ -224,15 +262,15 @@ export function RecordDetailPage() {
           type="button"
           onClick={() => void toggleFavorite(record.id)}
           aria-pressed={record.favorite}
-          className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-line bg-paper-raised px-4 py-2.5 transition-all active:scale-[0.98] dark:border-dusk-line dark:bg-dusk-raised"
+          className="glass-soft flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 py-2.5 transition-all active:scale-[0.98]"
         >
-          <IconStar filled={record.favorite} className={record.favorite ? 'h-5 w-5 text-terracotta' : 'h-5 w-5'} />
+          <IconBookmark filled={record.favorite} className={record.favorite ? 'h-5 w-5 text-cobalt dark:text-cobalt-lift' : 'h-5 w-5'} />
           {t('collection.favorites')}
         </button>
         <button
           type="button"
           onClick={() => void setArchived(record.id, record.status !== 'archived')}
-          className="flex min-h-12 items-center justify-center gap-2 rounded-xl border border-line bg-paper-raised px-4 py-2.5 transition-all active:scale-[0.98] dark:border-dusk-line dark:bg-dusk-raised"
+          className="glass-soft flex min-h-12 items-center justify-center gap-2 rounded-xl px-4 py-2.5 transition-all active:scale-[0.98]"
         >
           <IconArchive className="h-5 w-5" />
           {record.status === 'archived' ? t('detail.unarchive') : t('detail.archive')}
@@ -241,19 +279,19 @@ export function RecordDetailPage() {
           <button
             type="button"
             onClick={() => setConfirmingDelete(true)}
-            className="flex min-h-12 items-center justify-center gap-1 rounded-xl border border-red-300 px-4 py-2.5 text-red-600 transition-all hover:bg-red-50 active:scale-[0.98] dark:border-red-900 dark:hover:bg-red-950/40"
+            className="flex min-h-12 items-center justify-center gap-1 rounded-xl border border-signal-300 px-4 py-2.5 text-signal-600 transition-all hover:bg-signal-50 active:scale-[0.98] dark:border-signal-900 dark:hover:bg-signal-950/40"
           >
             <IconTrash className="h-4 w-4" /> {t('common.delete')}
           </button>
         ) : (
-          <div className="col-span-2 rounded-2xl border border-red-300 bg-red-50/60 p-4 dark:border-red-900 dark:bg-red-950/30">
+          <div className="col-span-2 rounded-2xl border border-signal-300 bg-signal-50/60 p-4 dark:border-signal-900 dark:bg-signal-950/30">
             <p className="font-semibold">{t('detail.deleteTitle')}</p>
             <p className="mt-0.5 text-sm text-ink-soft dark:text-dusk-soft">{t('detail.deleteBody')}</p>
             <div className="mt-3 flex gap-3">
               <button
                 type="button"
                 onClick={() => void onDelete()}
-                className="flex-1 rounded-xl bg-red-600 px-4 py-2.5 font-semibold text-white shadow-md shadow-red-600/25 transition-all active:scale-[0.98]"
+                className="flex-1 rounded-xl bg-signal-600 px-4 py-2.5 font-semibold text-white shadow-md shadow-signal-600/25 transition-all active:scale-[0.98]"
               >
                 {t('common.confirm')}
               </button>

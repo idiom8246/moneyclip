@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useSearchParams } from 'react-router-dom'
+import { EmptyState } from '../components/EmptyState'
 import { PageHeader } from '../components/ui'
 import { expiringSoon, displayStatus } from '../lib/inventory'
 import { useInventoryItems, useShoppingItems } from '../hooks'
@@ -9,10 +10,10 @@ import { formatMoney } from '../lib/currency'
 import type { InventoryItem } from '../db/types'
 
 const STATUS_DOT: Record<string, string> = {
-  unopened: 'bg-stone-400',
-  opened: 'bg-terracotta',
-  finished: 'bg-stone-300 dark:bg-stone-600',
-  expired: 'bg-red-500',
+  unopened: 'bg-cobalt/35 dark:bg-cobalt-lift/35',
+  opened: 'bg-cobalt dark:bg-cobalt-lift',
+  finished: 'bg-line dark:bg-dusk-line',
+  expired: 'bg-signal-500',
 }
 
 function statusLabel(item: InventoryItem, t: (k: string) => string): string {
@@ -21,6 +22,22 @@ function statusLabel(item: InventoryItem, t: (k: string) => string): string {
   if (s === 'finished') return t('inventory.finished')
   if (s === 'opened') return t('inventory.opened')
   return t('inventory.unopened')
+}
+
+function expiryUrgency(
+  item: InventoryItem,
+  t: (k: string, options?: Record<string, number>) => string,
+): string | null {
+  if (!item.expiresAt || item.status === 'finished' || item.status === 'expired') return null
+  const [y, m, d] = item.expiresAt.split('-').map(Number)
+  const due = new Date(y, m - 1, d)
+  const now = new Date()
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const days = Math.round((due.getTime() - today.getTime()) / 86_400_000)
+  if (days < 0 || days > 3) return null
+  if (days === 0) return t('inventory.dueToday')
+  if (days === 1) return t('inventory.dueTomorrow')
+  return t('inventory.dueWithin', { count: days })
 }
 
 /** 庫存 + 清單 — segmented page per the pinned nav decision. */
@@ -60,17 +77,17 @@ export function InventoryListPage() {
       <PageHeader title={t('inventory.title')} />
 
       {/* segmented 庫存｜清單 */}
-      <div className="mt-3 flex overflow-hidden rounded-xl border border-line dark:border-dusk-line">
+      <div className="glass-soft mt-3 flex gap-1 rounded-xl p-1">
         {(['stock', 'list'] as const).map((seg) => (
           <button
             key={seg}
             type="button"
             aria-pressed={tab === seg}
             onClick={() => setTab(seg)}
-            className={`min-h-11 flex-1 px-3 py-2 text-sm font-medium transition-colors ${
+            className={`min-h-10 flex-1 rounded-lg px-3 py-2 text-sm transition-all active:scale-[0.98] ${
               tab === seg
-                ? 'bg-terracotta font-semibold text-paper shadow-sm shadow-terracotta/25'
-                : 'bg-transparent text-ink-soft hover:bg-terracotta-soft/50 dark:text-dusk-soft dark:hover:bg-dusk-line/50'
+                ? 'btn-cobalt font-semibold'
+                : 'text-ink-soft hover:bg-paper-raised/50 dark:text-dusk-soft dark:hover:bg-dusk-raised/60'
             }`}
           >
             {seg === 'stock' ? t('inventory.tabInventory') : t('inventory.tabList')}
@@ -79,7 +96,8 @@ export function InventoryListPage() {
       </div>
 
       {tab === 'stock' ? (
-        <>          <div className="mt-3 flex flex-wrap gap-2">
+        <>
+          <div className="mt-3 flex flex-wrap gap-2">
             {(
               [
                 ['all', t('common.all')],
@@ -94,8 +112,8 @@ export function InventoryListPage() {
                 onClick={() => setFilter(f)}
                 className={`inline-flex min-h-11 items-center rounded-full px-3.5 py-1.5 text-sm transition-all active:scale-95 ${
                   filter === f
-                    ? 'bg-terracotta-deep text-paper shadow-sm shadow-terracotta/30'
-                    : 'bg-terracotta-soft/60 text-ink hover:bg-terracotta-soft dark:bg-dusk-line/60 dark:text-dusk-ink dark:hover:bg-dusk-line'
+                    ? 'btn-cobalt font-medium'
+                    : 'glass-soft text-ink hover:brightness-[1.03] dark:text-dusk-ink'
                 }`}
               >
                 {label}
@@ -104,24 +122,38 @@ export function InventoryListPage() {
           </div>
 
           {visible.length === 0 ? (
-            <p className="px-6 py-16 text-center text-ink-soft dark:text-dusk-soft">{t('inventory.empty')}</p>
+            <EmptyState
+              kind="inventory"
+              title={t('inventory.emptyTitle')}
+              body={t('inventory.empty')}
+              compact
+              action={<Link to="/add" className="btn-cobalt inline-flex min-h-11 items-center rounded-xl px-4 py-2 text-sm font-semibold">{t('collection.emptyCta')}</Link>}
+            />
           ) : (
             <ul className="mt-3 space-y-2">
               {visible.map((item) => {
                 const status = displayStatus(item)
+                const urgency = expiryUrgency(item, t)
                 return (
                   <li key={item.id}>
                     <Link
                       to={`/inventory/${item.id}`}
-                      className="flex min-h-14 items-center gap-3 rounded-xl bg-paper-raised px-3 py-2 ring-1 ring-line transition-all active:scale-[0.99] dark:bg-dusk-raised dark:ring-dusk-line"
+                      className="glass-soft flex min-h-14 items-center gap-3 rounded-xl px-3 py-2 transition-all active:scale-[0.99]"
                     >
-                      <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${STATUS_DOT[status]}`} aria-hidden />
+                      <span className={`h-2.5 w-2.5 shrink-0 rounded-full ${urgency ? 'bg-signal-500' : STATUS_DOT[status]}`} aria-hidden />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate text-sm font-medium">{item.name}</span>
-                        <span className="block text-xs text-ink-soft dark:text-dusk-soft">
-                          {statusLabel(item, t)}
-                          {item.expiresAt && ` · ${t('inventory.expires', { date: item.expiresAt })}`}
-                          {` · ×${item.qty}`}
+                        <span className="mt-0.5 flex min-w-0 items-center gap-1.5">
+                          <span className="truncate text-xs text-ink-soft dark:text-dusk-soft">
+                            {statusLabel(item, t)}
+                            {item.expiresAt && ` · ${t('inventory.expires', { date: item.expiresAt })}`}
+                            {` · ×${item.qty}`}
+                          </span>
+                          {urgency && (
+                            <span className="shrink-0 rounded-full border border-signal-300 px-1.5 py-0.5 text-[11px] font-semibold text-signal-600 dark:border-signal-900 dark:text-signal-300">
+                              {urgency}
+                            </span>
+                          )}
                         </span>
                       </span>
                     </Link>
@@ -140,27 +172,27 @@ export function InventoryListPage() {
               onKeyDown={(e) => e.key === 'Enter' && submit()}
               placeholder={t('list.addItem')}
               aria-label={t('list.addItem')}
-              className="w-full min-w-0 min-h-11 rounded-xl border border-line bg-paper-raised px-3.5 text-base text-ink focus:border-terracotta focus:outline-none dark:border-dusk-line dark:bg-dusk-raised dark:text-dusk-ink"
+              className="glass-soft w-full min-w-0 min-h-11 rounded-xl px-3.5 text-base text-ink focus:outline-none focus:ring-2 focus:ring-cobalt/25 dark:text-dusk-ink"
             />
             <button
               type="button"
               onClick={submit}
               disabled={!draft.trim()}
-              className="min-h-11 shrink-0 rounded-xl bg-terracotta px-4 text-sm font-semibold text-paper disabled:opacity-40"
+              className="btn-cobalt min-h-11 shrink-0 rounded-xl px-4 text-sm font-semibold transition-all active:scale-[0.97] disabled:opacity-40"
             >
               {t('common.add')}
             </button>
           </div>
 
           {(shopping ?? []).length === 0 ? (
-            <p className="px-6 py-16 text-center text-ink-soft dark:text-dusk-soft">{t('list.empty')}</p>
+            <EmptyState kind="list" title={t('list.emptyTitle')} body={t('list.empty')} compact />
           ) : (
             <>
               <ul className="mt-3 space-y-2">
                 {[...(shopping ?? [])].sort((a, b) => a.checked - b.checked).map((item) => (
                   <li
                     key={item.id}
-                    className={`flex min-h-12 items-center gap-3 rounded-xl bg-paper-raised px-3 ring-1 ring-line dark:bg-dusk-raised dark:ring-dusk-line ${
+                    className={`glass-soft flex min-h-12 items-center gap-3 rounded-xl px-3 ${
                       item.checked ? 'opacity-50' : ''
                     }`}
                   >
@@ -170,8 +202,8 @@ export function InventoryListPage() {
                       aria-checked={item.checked ? 'true' : 'false'}
                       aria-label={item.name}
                       onClick={() => void toggleShoppingItem(item.id)}
-                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border transition-colors ${
-                        item.checked ? 'border-terracotta bg-terracotta text-paper' : 'border-line dark:border-dusk-line'
+                      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-all ${
+                        item.checked ? 'btn-cobalt' : 'shadow-[inset_0_0_0_1.5px_var(--hairline)]'
                       }`}
                     >
                       {item.checked ? '✓' : ''}
@@ -192,13 +224,13 @@ export function InventoryListPage() {
               </ul>
               <div className="mt-4 flex items-center justify-between">
                 <span className="text-sm text-ink-soft dark:text-dusk-soft">{t('list.estTotal')}</span>
-                <span className="text-lg font-semibold tabular-nums">{formatMoney(estTotal, 'HKD', i18n.language)}</span>
+                <span className="font-display text-lg font-bold tabular-nums">{formatMoney(estTotal, 'HKD', i18n.language)}</span>
               </div>
               {checked.length > 0 && (
                 <button
                   type="button"
                   onClick={() => void checked.forEach((i) => void removeShoppingItem(i.id))}
-                  className="mt-3 min-h-11 w-full rounded-xl border border-line text-sm text-ink-soft dark:border-dusk-line dark:text-dusk-soft"
+                  className="glass-soft mt-3 min-h-11 w-full rounded-xl text-sm text-ink-soft transition-all active:scale-[0.99] dark:text-dusk-soft"
                 >
                   {t('list.clearDone')}
                 </button>

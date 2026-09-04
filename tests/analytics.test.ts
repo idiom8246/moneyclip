@@ -152,6 +152,18 @@ describe('reportMonth / availableMonths', () => {
     expect(r.savingsCount).toBe(1)
   })
 
+  it('keeps unconverted face amounts separate from the base-currency total', () => {
+    const mixed = [
+      mk({ date: '2026-08-02', currency: 'HKD', price: 100 }),
+      mk({ date: '2026-08-03', currency: 'JPY', price: 900 }),
+    ]
+    const r = reportMonth(mixed, '2026-08', 'HKD', { manualRates: {} })
+    expect(r.total).toBe(100)
+    expect(r.unconvertedCount).toBe(1)
+    expect(r.unconvertedByCurrency).toEqual({ JPY: 900 })
+    expect(r.convertedForeignCount).toBe(0)
+  })
+
   it('lists distinct months desc', () => {
     expect(availableMonths(records)).toEqual(['2026-08', '2026-07'])
   })

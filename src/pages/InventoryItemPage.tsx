@@ -36,7 +36,7 @@ export function InventoryItemPage() {
       <PageHeader title={item.name} onBack={() => navigate('/inventory')} />
 
       <div className="mt-2 flex items-center gap-2 text-sm text-ink-soft dark:text-dusk-soft">
-        <span className="rounded-full bg-terracotta-soft px-2.5 py-0.5 text-xs text-terracotta-deep dark:bg-dusk-line dark:text-dusk-ink">
+        <span className="rounded-full bg-cobalt-soft px-2.5 py-0.5 text-xs font-medium text-cobalt-deep dark:bg-cobalt-lift/15 dark:text-cobalt-lift">
           {status === 'expired' ? t('inventory.expiredS') : status === 'finished' ? t('inventory.finished') : status === 'opened' ? t('inventory.opened') : t('inventory.unopened')}
         </span>
         <span className="tabular-nums">×{item.qty}{item.unit ?? ''}</span>
@@ -44,7 +44,7 @@ export function InventoryItemPage() {
       </div>
 
       {active && (
-        <SectionCard title={t('inventory.quickActions')}>
+        <SectionCard title={t('inventory.quickActions')} className="mt-4">
           <div className="grid grid-cols-4 gap-2">
             {PCT_PRESETS.map((pct) => (
               <GhostButton
@@ -62,7 +62,7 @@ export function InventoryItemPage() {
           </div>
           {!confirming ? (
             <GhostButton
-              className="mt-2 w-full border-red-300 text-red-600 dark:border-red-900"
+              className="mt-2 w-full text-signal-600 shadow-[inset_0_0_0_1px_var(--color-signal-300)] dark:text-signal-300 dark:shadow-[inset_0_0_0_1px_var(--color-signal-900)]"
               onClick={() => setConfirming(true)}
             >
               {t('inventory.discard')}
@@ -70,7 +70,7 @@ export function InventoryItemPage() {
           ) : (
             <div className="mt-2 flex gap-2">
               <GhostButton
-                className="flex-1 border-red-300 text-red-600 dark:border-red-900"
+                className="flex-1 bg-signal-600 font-semibold text-white shadow-[0_8px_20px_-10px_rgb(176_42_42/60%)] hover:brightness-110"
                 onClick={() => {
                   void discardItem(item.id)
                   navigate('/inventory')
@@ -86,7 +86,7 @@ export function InventoryItemPage() {
         </SectionCard>
       )}
 
-      <SectionCard title={t('inventory.timeline')}>
+      <SectionCard title={t('inventory.timeline')} className="mt-4">
         {(events ?? []).length === 0 ? (
           <p className="text-sm text-ink-soft dark:text-dusk-soft">{t('inventory.noEvents')}</p>
         ) : (
@@ -117,19 +117,19 @@ export function InventoryItemPage() {
         {item.sourceRecordId && (
           <Link
             to={`/record/${item.sourceRecordId}`}
-            className="flex min-h-12 items-center justify-center rounded-xl border border-line text-sm dark:border-dusk-line"
+            className="glass-soft flex min-h-12 items-center justify-center rounded-xl text-sm transition-all active:scale-[0.99]"
           >
             {t('inventory.sourceReceipt')}
           </Link>
         )}
         <Link
           to={`/product/${encodeURIComponent(itemKey({ id: 'k', name: item.name, barcode: item.barcode }))}`}
-          className="flex min-h-12 items-center justify-center rounded-xl border border-line text-sm dark:border-dusk-line"
+          className="glass-soft flex min-h-12 items-center justify-center rounded-xl text-sm transition-all active:scale-[0.99]"
         >
           {t('dossier.title')}
         </Link>
         <GhostButton
-          className="border-red-300 text-red-600 dark:border-red-900"
+          className="text-signal-600 shadow-[inset_0_0_0_1px_var(--color-signal-300)] dark:text-signal-300 dark:shadow-[inset_0_0_0_1px_var(--color-signal-900)]"
           onClick={() => {
             void deleteInventoryItem(item.id)
             navigate('/inventory')

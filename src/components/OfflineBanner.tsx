@@ -19,7 +19,7 @@ export function OfflineBanner() {
 
   if (!offline) return null
   return (
-    <div role="status" className="bg-dusk px-4 py-1.5 text-center text-xs text-dusk-ink dark:bg-paper dark:text-ink">
+    <div role="status" className="btn-cobalt px-4 py-1.5 text-center text-xs font-medium">
       {t('offline.banner')}
     </div>
   )

@@ -1,5 +1,11 @@
 export default {
   translation: {
+    app: {
+      home: '返回發票',
+      tools: '應用程式工具',
+      switchToEnglish: '切換至英文',
+      switchToChinese: '切換至繁體中文',
+    },
     common: {
       save: '儲存',
       cancel: '取消',
@@ -16,6 +22,7 @@ export default {
       removeTag: '移除標籤 {{tag}}',
     },
     nav: {
+      invoices: '發票',
       collection: '收藏',
       add: '新增',
       search: '搜尋',
@@ -23,8 +30,15 @@ export default {
       list: '清單',
       inventory: '庫存',
     },
+    breadcrumbs: {
+      label: '麵包屑導覽',
+      record: '發票詳情',
+      item: '項目詳情',
+      trip: '行程',
+    },
     list: {
       title: '購物清單',
+      emptyTitle: '購物清單是空的',
       addItem: '加入要買的項目⋯⋯',
       empty: '未有項目——可從價格記錄加入,或在上方輸入',
       estTotal: '估計總額',
@@ -34,6 +48,7 @@ export default {
     },
     reports: {
       title: '報表',
+      emptyTitle: '數字會在這裡成形',
       total: '本月',
       receipts: '{{count}} 張單據',
       byCategory: '分類佔比',
@@ -41,19 +56,23 @@ export default {
       savings: '折扣慳咗',
       empty: '未有記錄,新增後即可見報表',
       unconverted: '部分金額未換算',
+      excludedUnconverted: '未計入總額',
     },
     dossier: {
       title: '價格記錄',
+      emptyTitle: '還未有價格軌跡',
       avg: '平均',
       best: '最低',
       worst: '最高',
       purchases: '{{count}} 次購買',
+      priceTrend: '價格走勢',
       empty: '未有購買記錄',
       unnamedBarcode: '未命名條碼,命名後記錄更整齊',
       was: '原價 {{price}}',
     },
     store: {
       title: '商戶',
+      emptyTitle: '還未有這間商戶的足跡',
       visits: '{{count}} 次到訪',
       totalSpend: '總消費',
       avgPerVisit: '平均每訪',
@@ -62,6 +81,7 @@ export default {
       empty: '此商戶未有單據',
     },
     trip: {
+      emptyTitle: '這趟行程還未開筆',
       total: '行程總額',
       byCategory: '分類',
       receipts: '單據',
@@ -69,6 +89,7 @@ export default {
     },
     inventory: {
       title: '庫存',
+      emptyTitle: '尚未追蹤庫存',
       tabInventory: '庫存',
       tabList: '清單',
       empty: '未有追蹤項目——可從記錄或價格記錄加入',
@@ -87,6 +108,9 @@ export default {
       addToInventory: '加入庫存',
       added: '已加入庫存',
       expiringSoon: '{{count}} 項 3 日內到期',
+      dueToday: '今日到期',
+      dueTomorrow: '明天到期',
+      dueWithin: '{{count}} 日內',
     },
     reasons: {
       want: '想要',
@@ -99,9 +123,18 @@ export default {
     },
     collection: {
       title: 'Moneyclip',
+      emptyTitle: '你的發票匣還是空的',
       empty: '值得留的,再放進來。',
       emptyCta: '新增第一筆',
       favorites: '最愛',
+      savedEmptyTitle: '尚未收藏任何記錄',
+      savedEmptyBody: '在發票詳情按下書籤,重要記錄就會留在這裡。',
+      browseInvoices: '瀏覽發票',
+      noFilteredTitle: '此組篩選未有結果',
+      noFilteredBody: '試試清除篩選,或換一個分類。',
+      clearFilters: '清除篩選',
+      moreFilters: '更多篩選',
+      savedFilter: '收藏狀態',
       filterByCategory: '依分類篩選',
       filterByReason: '依事由篩選',
       filterByTag: '依標籤篩選',
@@ -193,11 +226,14 @@ export default {
       updatedAt: '更新於 {{date}}',
       archived: '已封存',
       itemsTotal: '合計 {{amount}}',
+      related: '相關連結',
     },
     search: {
       title: '搜尋',
       placeholder: '標題、商家、備註、標籤⋯⋯',
+      initialTitle: '找回一筆記錄',
       initial: '輸入關鍵字,或從篩選開始。',
+      noResultsTitle: '沒有符合的記錄',
       noResults: '找不到。換個關鍵字,或移除部分篩選。',
       includeArchived: '含封存',
       favoriteOnly: '只看最愛',

@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
 import { Bars, Pie } from '../components/charts'
+import { EmptyState } from '../components/EmptyState'
 import { PageHeader, SectionCard } from '../components/ui'
 import { categoryDisplayName } from '../lib/search'
 import { availableMonths, reportMonth } from '../lib/analytics'
@@ -27,13 +29,21 @@ export function ReportsPage() {
     const c = categories.find((x) => x.id === categoryId)
     return c ? `${c.icon ?? ''} ${categoryDisplayName(c, i18n.language)}` : t('form.noCategory')
   }
+  const unconvertedAmounts = report
+    ? Object.entries(report.unconvertedByCurrency).map(([currency, amount]) => formatMoney(amount, currency, i18n.language))
+    : []
 
   return (
     <div className="px-4 pb-10">
-      <PageHeader title={t('reports.title')} onBack={() => history.back()} />
+      <PageHeader title={t('reports.title')} />
 
       {months.length === 0 || !report ? (
-        <p className="px-6 py-16 text-center text-ink-soft dark:text-dusk-soft">{t('reports.empty')}</p>
+        <EmptyState
+          kind="reports"
+          title={t('reports.emptyTitle')}
+          body={t('reports.empty')}
+          action={<Link to="/add" className="btn-cobalt inline-flex min-h-11 items-center rounded-xl px-4 py-2 text-sm font-semibold">{t('collection.emptyCta')}</Link>}
+        />
       ) : (
         <div className="space-y-4 pt-2">
           {/* month stepper */}
@@ -43,39 +53,46 @@ export function ReportsPage() {
               aria-label={t('common.back')}
               disabled={index >= months.length - 1}
               onClick={() => setIndex((i) => Math.min(months.length - 1, i + 1))}
-              className="flex h-11 w-11 items-center justify-center rounded-full text-xl text-ink-soft disabled:opacity-30 dark:text-dusk-soft"
+              className="glass-soft flex h-11 w-11 items-center justify-center rounded-full text-xl text-ink-soft transition-all active:scale-95 disabled:opacity-30 dark:text-dusk-soft"
             >
               ‹
             </button>
-            <span className="min-w-24 text-center text-lg font-semibold tabular-nums">{month}</span>
+            <span className="min-w-24 text-center font-display text-lg font-semibold tabular-nums">{month}</span>
             <button
               type="button"
               aria-label="›"
               disabled={index <= 0}
               onClick={() => setIndex((i) => Math.max(0, i - 1))}
-              className="flex h-11 w-11 items-center justify-center rounded-full text-xl text-ink-soft disabled:opacity-30 dark:text-dusk-soft"
+              className="glass-soft flex h-11 w-11 items-center justify-center rounded-full text-xl text-ink-soft transition-all active:scale-95 disabled:opacity-30 dark:text-dusk-soft"
             >
               ›
             </button>
           </div>
 
-          <div className="rounded-2xl bg-paper-raised p-4 shadow-sm shadow-ink/[0.04] ring-1 ring-line dark:bg-dusk-raised dark:ring-dusk-line dark:shadow-none">
-            <p className="text-xs font-semibold uppercase tracking-wider text-ink-soft dark:text-dusk-soft">
+          <div className="glass-soft animate-rise-in rounded-[24px] p-5">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-soft dark:text-dusk-soft">
               {t('reports.total')}
             </p>
-            <p className="mt-1 text-3xl font-bold tabular-nums tracking-tight">{money(report.total)}</p>
+            <p className="mt-1 font-display text-[34px] font-bold leading-10 tabular-nums tracking-[-0.02em] [font-stretch:110%]">
+              {(report.convertedForeignCount > 0 || report.unconvertedCount > 0) && '≈ '}
+              {money(report.total)}
+            </p>
             <p className="mt-0.5 text-xs text-ink-soft dark:text-dusk-soft">
               {t('reports.receipts', { count: report.count })}
             </p>
             {report.unconvertedCount > 0 && (
-              <p className="mt-1 text-xs text-ink-soft dark:text-dusk-soft">{t('reports.unconverted')}</p>
+              <p className="mt-2 inline-flex flex-wrap items-center gap-1 rounded-full bg-cobalt-soft px-2.5 py-1 text-xs text-cobalt-deep dark:bg-cobalt-lift/15 dark:text-cobalt-lift">
+                <strong>{t('reports.unconverted')}</strong>
+                <span>· {t('reports.excludedUnconverted')}</span>
+                {unconvertedAmounts.length > 0 && <span className="tabular-nums">{unconvertedAmounts.join(' · ')}</span>}
+              </p>
             )}
           </div>
 
           {report.savings > 0 && (
-            <div className="rounded-2xl bg-terracotta-soft p-4 text-terracotta-deep dark:bg-dusk-line dark:text-dusk-ink">
-              <p className="text-xs font-semibold uppercase tracking-wider opacity-80">{t('reports.savings')}</p>
-              <p className="mt-0.5 text-2xl font-bold tabular-nums">{money(report.savings)}</p>
+            <div className="rounded-[20px] bg-cobalt-soft p-4 text-cobalt-deep dark:bg-cobalt-lift/15 dark:text-cobalt-lift">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.08em] opacity-80">{t('reports.savings')}</p>
+              <p className="mt-0.5 font-display text-2xl font-bold tabular-nums">{money(report.savings)}</p>
             </div>
           )}
 
