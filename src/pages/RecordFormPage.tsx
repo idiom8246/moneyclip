@@ -24,6 +24,9 @@ import { uid } from '../lib/uid'
 import { COMMON_CURRENCIES, isCommonCurrency } from '../lib/currency'
 import { SAVE_REASONS, type RecordItem, type SaveReason } from '../db/types'
 import { db } from '../db/db'
+import type { InvoiceDetails } from '../db/invoice'
+import { InvoiceDetails as InvoiceView, InvoiceReview } from '../components/InvoiceDetails'
+import { bindInvoiceItems, isRestrictedBarcode, mergeInvoiceEvidence } from '../lib/invoice'
 
 interface StagedPhoto {
   key: string
@@ -64,6 +67,12 @@ export function RecordFormPage() {
   // Manual entry always shows at least one blank row; unnamed rows are
   // dropped on save (see onSave).
   const [items, setItems] = useState<RecordItem[]>([{ id: uid(), name: '' }])
+  const [invoice, setInvoice] = useState<InvoiceDetails>()
+  const [pendingItems, setPendingItems] = useState<RecordItem[]>([])
+  const [ocrPhotoKey, setOcrPhotoKey] = useState('')
+  const dateTouched = useRef(false)
+  const currentItems = useRef(items)
+  currentItems.current = items
   const [photos, setPhotos] = useState<StagedPhoto[]>([])
   const [removedAttachmentIds, setRemovedAttachmentIds] = useState<string[]>([])
   const [scanning, setScanning] = useState(false)
@@ -82,7 +91,13 @@ export function RecordFormPage() {
   const draftTimer = useRef<number>()
 
   const updateItem = (itemId: string, patch: Partial<RecordItem>) =>
-    setItems((prev) => prev.map((x) => (x.id === itemId ? { ...x, ...patch } : x)))
+    setItems((prev) => prev.map((x) => (x.id === itemId ? {
+      ...x, ...patch,
+      // A manual quantity/price edit invalidates a formerly derived snapshot.
+      ...(['qty', 'unitPrice', 'lineTotal', 'quantityText', 'priceQuantity', 'priceUnit', 'unit', 'priceBasis', 'lineKind'].some((key) => key in patch)
+        ? { baseUnitPrice: undefined } : {}),
+      ...('qty' in patch ? { quantityText: undefined } : {}),
+    } : x)))
 
   // Edit mode: hydrate once when the record arrives.
   useEffect(() => {
@@ -93,6 +108,8 @@ export function RecordFormPage() {
     priceTouched.current = existing.price !== undefined
     setCurrency(existing.currency ?? defaultCurrency)
     setDate(existing.date ?? '')
+    dateTouched.current = Boolean(existing.date)
+    setInvoice(existing.invoice)
     setMerchant(existing.merchant ?? '')
     setSaveReason(existing.saveReason)
     setCategoryId(existing.categoryId ?? '')
@@ -136,6 +153,8 @@ export function RecordFormPage() {
       setPrice(draft.price)
       setCurrency(draft.currency || defaultCurrency)
       setDate(draft.date || localToday())
+      dateTouched.current = draft.dateTouched ?? Boolean(draft.date)
+      setInvoice(draft.invoice)
       setMerchant(draft.merchant)
       setSaveReason(draft.saveReason)
       setCategoryId(draft.categoryId ?? '')
@@ -163,7 +182,7 @@ export function RecordFormPage() {
 
   // Debounce-persist the working draft so an interrupted session survives.
   useEffect(() => {
-    if (isEdit || !draftRestored.current) return
+    if (isEdit || saving || !draftRestored.current) return
     window.clearTimeout(draftTimer.current)
     draftTimer.current = window.setTimeout(() => {
       void saveFormDraft(
@@ -172,19 +191,21 @@ export function RecordFormPage() {
           price,
           currency,
           date,
+          dateTouched: dateTouched.current,
           merchant,
           saveReason,
           categoryId,
           tags,
           note,
           items,
+          invoice,
           photos: photos.map((p) => ({ key: p.key, blob: p.blob, thumbBlob: p.thumbBlob })),
         },
         db,
       )
     }, 600)
     return () => window.clearTimeout(draftTimer.current)
-  }, [isEdit, title, price, currency, date, merchant, saveReason, categoryId, tags, note, items, photos])
+  }, [isEdit, saving, title, price, currency, date, merchant, saveReason, categoryId, tags, note, items, invoice, photos])
 
   // Release previews on unmount
   useEffect(
@@ -236,7 +257,7 @@ export function RecordFormPage() {
 
   const onScanResult = async (code: string) => {
     setScanning(false)
-    const product = await lookupProduct(code)
+    const product = isRestrictedBarcode(code) ? null : await lookupProduct(code)
     const name = product ? (product.brand ? `${product.brand} ${product.name}` : product.name) : ''
     // Fill the blank default row first; only append when every row is in use.
     setItems((prev) => {
@@ -255,7 +276,7 @@ export function RecordFormPage() {
       navigate('/settings')
       return
     }
-    const photo = photos[0]
+    const photo = photos.find((p) => p.key === ocrPhotoKey) ?? photos[0]
     if (!photo) return
     setOcrBusy(true)
     const controller = new AbortController()
@@ -264,9 +285,9 @@ export function RecordFormPage() {
       const provider = createOpenAiCompatibleProvider()
       const receipt = await provider.extract({ image: photo.blob, config: ocrConfig, signal: controller.signal })
       // Only fill fields the user hasn't touched (spec §6.2 — never overwrite).
-      if (!merchant && receipt.merchant) setMerchant(receipt.merchant)
-      if (!date && receipt.date) setDate(receipt.date)
-      const fillsTotal = !price && !priceTouched.current && receipt.total !== undefined
+      if (receipt.merchant) setMerchant((prev) => prev || receipt.merchant!)
+      if (!dateTouched.current && receipt.date) setDate(receipt.date)
+      const fillsTotal = !priceTouched.current && receipt.total !== undefined
       if (fillsTotal) {
         setPrice(String(receipt.total))
         priceTouched.current = true
@@ -274,9 +295,13 @@ export function RecordFormPage() {
       // Currency rides along only when we filled the total (its currency),
       // never overwriting a user-entered amount's currency.
       if (receipt.currency && fillsTotal) setCurrency(receipt.currency)
-      if (receipt.items?.length && !items.some((i) => i.name.trim())) {
-        setItems(receipt.items.map((i) => ({ id: uid(), ...i })))
-      }
+      const sourceId = uid()
+      const extractedItems = (receipt.items ?? []).map((i) => ({ ...i, id: uid(), sourceId }))
+      if (extractedItems.length && !currentItems.current.some((i) => i.name.trim())) setItems(extractedItems)
+      else setPendingItems(extractedItems)
+      setInvoice((prev) => mergeInvoiceEvidence(prev, bindInvoiceItems(receipt.invoice, extractedItems), {
+        id: sourceId, attachmentId: photo.attachmentId ?? photo.key,
+      }))
       setOcrFilled(true)
     } catch (err) {
       // User-initiated cancel: form untouched, no failure noise.
@@ -297,6 +322,7 @@ export function RecordFormPage() {
       return
     }
     setSaving(true)
+    window.clearTimeout(draftTimer.current)
     const payload = {
       title: title.trim(),
       price: price ? Number(price) : undefined,
@@ -308,22 +334,33 @@ export function RecordFormPage() {
       tags,
       note: note.trim() || undefined,
       items: items.filter((i) => i.name.trim()),
+      invoice,
     }
     try {
-      let recordId: string
-      if (isEdit && id) {
-        await updateRecord(id, payload)
-        recordId = id
-        for (const attId of removedAttachmentIds) await deleteAttachment(attId)
-      } else {
-        recordId = (await createRecord(payload)).id
-        await clearFormDraft(db)
-      }
-      for (const photo of photos) {
-        if (!photo.attachmentId) {
-          await addAttachment(recordId, photo.blob, photo.thumbBlob)
+      let recordId = id ?? ''
+      await db.transaction('rw', [db.records, db.attachments, db.drafts], async () => {
+        if (isEdit && id) {
+          await updateRecord(id, payload)
+          for (const attId of removedAttachmentIds) await deleteAttachment(attId)
+        } else {
+          recordId = (await createRecord(payload)).id
         }
-      }
+        const mapping = new Map<string, string>()
+        for (const photo of photos) {
+          if (!photo.attachmentId) {
+            const attachment = await addAttachment(recordId, photo.blob, photo.thumbBlob)
+            mapping.set(photo.key, attachment.id)
+          }
+        }
+        if (invoice) await updateRecord(recordId, { invoice: { ...invoice,
+          adjustments: invoice.adjustments?.map((adjustment) => ({ ...adjustment,
+            itemIds: Array.isArray(adjustment.itemIds) ? adjustment.itemIds.filter((itemId) => payload.items.some((item) => item.id === itemId)) : undefined,
+          })),
+          sources: invoice.sources?.map((source) => ({
+          ...source, attachmentId: mapping.get(source.attachmentId ?? '') ?? source.attachmentId,
+        })) } })
+        if (!isEdit) await clearFormDraft(db)
+      })
       navigate(`/record/${recordId}`, { replace: true })
       toast(t('form.saved'), {
         label: t('inventory.addToInventory'),
@@ -388,6 +425,12 @@ export function RecordFormPage() {
                   onChange={onPickFiles}
                 />
               </div>
+              {photos.length > 1 && <label className="mt-2 block text-sm">
+                {t('invoice.photoToRead')}
+                <select aria-label={t('invoice.photoToRead')} value={ocrPhotoKey || photos[0]?.key} onChange={(e) => setOcrPhotoKey(e.target.value)} className={fieldClass}>
+                  {photos.map((p, i) => <option key={p.key} value={p.key}>{t('invoice.photo', { count: i + 1 })}</option>)}
+                </select>
+              </label>}
               {ocrBusy ? (
                 <GhostButton
                   type="button"
@@ -428,6 +471,15 @@ export function RecordFormPage() {
           )}
         </SectionCard>
 
+        {!!pendingItems.length && <section className="rounded-xl border border-line p-3 dark:border-dusk-line">
+          <p className="text-sm">{t('invoice.existingItemsKept')}</p>
+          <GhostButton type="button" onClick={() => {
+            setItems((prev) => [...prev.filter((i) => i.name.trim()), ...pendingItems])
+            setPendingItems([])
+          }}>{t('invoice.appendItems', { count: pendingItems.length })}</GhostButton>
+          <GhostButton type="button" onClick={() => setPendingItems([])}>{t('common.cancel')}</GhostButton>
+        </section>}
+
         {/* Section B: 手動輸入 — one empty item row by default; user appends rows */}
         <DisclosureCard title={t('form.manualEntry')} icon={<Pencil className="h-4 w-4" strokeWidth={1.8} />} defaultOpen>
           <div className="space-y-3">
@@ -455,7 +507,7 @@ export function RecordFormPage() {
                     value={item.qty ?? ''}
                     onChange={(e) => updateItem(item.id, { qty: e.target.value ? Number(e.target.value) : undefined })}
                     placeholder={t('form.qty')}
-                    inputMode="numeric"
+                    inputMode="decimal"
                     aria-label={t('form.qty')}
                     className={`${fieldClass} min-h-10 text-sm`}
                   />
@@ -484,6 +536,18 @@ export function RecordFormPage() {
                     className={`${fieldClass} min-h-10 text-sm`}
                   />
                 </div>
+                <details className="mt-2">
+                  <summary className="min-h-11 cursor-pointer content-center text-sm">{t('invoice.itemDetails')}</summary>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Field label={t('invoice.fields.unit')}><input value={item.unit ?? ''} onChange={(e) => updateItem(item.id, { unit: e.target.value || undefined })} className={fieldClass} /></Field>
+                    <Field label={t('invoice.fields.lineTotal')}><input inputMode="decimal" value={item.lineTotal ?? ''} onChange={(e) => updateItem(item.id, { lineTotal: e.target.value || undefined })} className={fieldClass} /></Field>
+                    <Field label={t('invoice.fields.sku')}><input value={item.sku ?? ''} onChange={(e) => updateItem(item.id, { sku: e.target.value || undefined })} className={fieldClass} /></Field>
+                    <Field label={t('invoice.fields.lineKind')}><select value={item.lineKind ?? 'purchase'} onChange={(e) => updateItem(item.id, { lineKind: e.target.value as RecordItem['lineKind'] })} className={fieldClass}>
+                      {['purchase', 'gift', 'adjustment', 'return', 'other'].map((kind) => <option key={kind} value={kind}>{t(`invoice.kinds.${kind}`)}</option>)}
+                    </select></Field>
+                  </div>
+                  {item.rawText && <p className="mt-2 whitespace-pre-wrap break-words text-sm">{item.rawText}</p>}
+                </details>
               </div>
             ))}
             <GhostButton type="button" onClick={() => setItems((p) => [...p, { id: uid(), name: '' }])} className="w-full">
@@ -542,12 +606,21 @@ export function RecordFormPage() {
         {/* Date + merchant */}
         <div className="flex gap-3">
           <Field label={t('form.date')} className="min-w-0 flex-1">
-            <input type="date" value={date} onChange={(e) => setDate(e.target.value)} className={fieldClass} />
+            <input type="date" value={date} onChange={(e) => { setDate(e.target.value); dateTouched.current = true }} className={fieldClass} />
           </Field>
           <Field label={t('form.merchant')} className="min-w-0 flex-1">
             <input value={merchant} onChange={(e) => setMerchant(e.target.value)} className={fieldClass} />
           </Field>
         </div>
+
+        <DisclosureCard title={t('invoice.tab')}>
+          <div className="space-y-3">
+            <Field label={t('invoice.fields.invoiceNumber')}><input value={invoice?.invoiceNumber ?? ''} onChange={(e) => setInvoice((prev) => ({ ...prev, invoiceNumber: e.target.value }))} className={fieldClass} /></Field>
+            <Field label={t('invoice.transcript')}><textarea rows={5} value={invoice?.transcript ?? ''} onChange={(e) => setInvoice((prev) => ({ ...prev, transcript: e.target.value }))} className={fieldClass} /></Field>
+            {invoice && <InvoiceView record={{ id: 'draft', title, items, invoice, currency, tags, favorite: false, status: 'active', createdAt: 0, updatedAt: 0 }} />}
+          </div>
+        </DisclosureCard>
+        <InvoiceReview record={{ invoice, items, currency }} />
 
         {/* Reason chips stay in the main flow — it is the soul of a journal entry */}
         <div>

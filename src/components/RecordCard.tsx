@@ -13,10 +13,12 @@ export function RecordCard({
   record,
   categories,
   defaultCurrency,
+  invoiceView = false,
 }: {
   record: ConsumptionRecord
   categories: Category[]
   defaultCurrency: string
+  invoiceView?: boolean
 }) {
   const { t, i18n } = useTranslation()
   const attachments = useAttachments(record.id)
@@ -35,7 +37,7 @@ export function RecordCard({
 
   return (
     <Link
-      to={`/record/${record.id}`}
+      to={`/record/${record.id}${invoiceView ? '?tab=invoice' : ''}`}
       className="group flex gap-3 rounded-2xl bg-paper-raised p-3 shadow-sm shadow-ink/[0.04] ring-1 ring-line transition-all hover:shadow-md hover:ring-line/80 active:scale-[0.99] dark:bg-dusk-raised dark:ring-dusk-line dark:shadow-none dark:hover:ring-dusk-line/80"
     >
       <div className="h-16 w-16 shrink-0 overflow-hidden rounded-xl bg-terracotta-soft/50 ring-1 ring-line/60 dark:bg-dusk-line/50 dark:ring-dusk-line/60">

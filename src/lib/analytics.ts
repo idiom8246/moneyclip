@@ -1,6 +1,7 @@
 import type { Category, ConsumptionRecord, RecordItem } from '../db/types'
 import { convert, type RateSource } from './currency'
 import { effectivePrice } from './records'
+import { isPurchaseItem, itemUnitPrice, productKey } from './invoice'
 
 /**
  * Pure computations for the dossier / store / trip / reports pages.
@@ -14,7 +15,7 @@ export function normalizeItemName(name: string): string {
 
 /** Barcode identity wins; names fall back to exact-on-normalized matching. */
 export function itemKey(it: RecordItem): string {
-  return it.barcode ? `bc:${it.barcode}` : `n:${normalizeItemName(it.name)}`
+  return productKey(it)
 }
 
 export interface DossierPurchase {
@@ -24,6 +25,9 @@ export interface DossierPurchase {
   /** Raw unit price in the record's currency. */
   unitPrice?: number
   originalPrice?: number
+  unit?: string
+  priceBasis?: RecordItem['priceBasis']
+  unallocatedDiscount?: boolean
   currency?: string
   /** Snapshot taken at save time, in the base currency (absent on legacy rows). */
   baseUnitPrice?: number
@@ -50,9 +54,7 @@ interface FlatPurchase extends DossierPurchase {
 }
 
 function itemMatches(it: RecordItem, key: string): boolean {
-  if (key.startsWith('bc:')) return it.barcode === key.slice(3)
-  if (key.startsWith('n:')) return !it.barcode && normalizeItemName(it.name) === key.slice(2)
-  return false
+  return itemKey(it) === key
 }
 
 export function priceHistory(
@@ -64,22 +66,26 @@ export function priceHistory(
   const purchases: FlatPurchase[] = []
   for (const rec of records) {
     for (const it of rec.items ?? []) {
-      if (!itemMatches(it, key)) continue
+      if (!isPurchaseItem(it) || !itemMatches(it, key)) continue
+      const unitPrice = itemUnitPrice(it)
       const currency = (rec.currency ?? base).toUpperCase()
       let converted: number | null
       if (it.baseUnitPrice !== undefined) {
         converted = it.baseUnitPrice
-      } else if (it.unitPrice === undefined || currency === base.toUpperCase()) {
-        converted = it.unitPrice ?? null
+      } else if (unitPrice === undefined || currency === base.toUpperCase()) {
+        converted = unitPrice ?? null
       } else {
-        converted = convert(it.unitPrice, currency, base, rateSource)
+        converted = convert(unitPrice, currency, base, rateSource)
       }
       purchases.push({
         name: it.name,
         date: rec.date,
         merchant: rec.merchant,
         qty: it.qty,
-        unitPrice: it.unitPrice,
+        unitPrice,
+        unit: it.unit,
+        priceBasis: it.lineTotal !== undefined ? (it.priceBasis ?? 'after_line_discounts') : (it.priceBasis ?? 'printed_unit'),
+        unallocatedDiscount: rec.invoice?.adjustments?.some((a) => a.scope === 'receipt' && !a.itemIds?.length) || rec.items?.some((i) => i.lineKind === 'adjustment'),
         originalPrice: it.originalPrice,
         currency: rec.currency,
         baseUnitPrice: it.baseUnitPrice,
@@ -151,6 +157,7 @@ export function merchantStats(
     else total += converted
 
     for (const it of rec.items ?? []) {
+      if (!isPurchaseItem(it)) continue
       const n = normalizeItemName(it.name)
       if (!n) continue
       const entry = items.get(n) ?? { name: it.name, count: 0 }
@@ -196,14 +203,16 @@ function sumSavings(
   for (const rec of rows) {
     const currency = (rec.currency ?? base).toUpperCase()
     for (const it of rec.items ?? []) {
-      if (it.originalPrice === undefined || it.unitPrice === undefined) continue
-      const savedUnit = it.originalPrice - it.unitPrice
+      if (!isPurchaseItem(it)) continue
+      const paidUnit = itemUnitPrice(it)
+      if (it.originalPrice === undefined || paidUnit === undefined || it.priceQuantity || (it.priceUnit && it.priceUnit !== it.unit)) continue
+      const savedUnit = it.originalPrice - paidUnit
       if (savedUnit <= 0) continue
       const saved = savedUnit * (it.qty ?? 1)
       let convertedSaved: number | null
       if (currency === base.toUpperCase()) convertedSaved = saved
-      else if (it.baseUnitPrice !== undefined && it.unitPrice > 0)
-        convertedSaved = saved * (it.baseUnitPrice / it.unitPrice)
+      else if (it.baseUnitPrice !== undefined && paidUnit > 0)
+        convertedSaved = saved * (it.baseUnitPrice / paidUnit)
       else convertedSaved = convert(saved, currency, base, rateSource)
       if (convertedSaved === null) continue
       savings += convertedSaved

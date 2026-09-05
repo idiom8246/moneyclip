@@ -10,7 +10,7 @@ import { useAllTags, useCategories, usePagedList, useRecords, useSetSearchParam,
 import { searchRecords, categoryDisplayName, type SortKey } from '../lib/search'
 import { SAVE_REASONS, type SaveReason } from '../db/types'
 
-export function CollectionPage() {
+export function CollectionPage({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -28,13 +28,13 @@ export function CollectionPage() {
 
   const visible = useMemo(
     () =>
-      searchRecords(records ?? [], categories, '', {
+      searchRecords((records ?? []).filter((record) => !invoicesOnly || !!record.invoice), categories, '', {
         favoriteOnly,
         categoryId: categoryFilter,
         saveReason: reasonFilter,
         tag: tagFilter,
       }, sort),
-    [records, categories, sort, favoriteOnly, categoryFilter, reasonFilter, tagFilter],
+    [records, categories, sort, favoriteOnly, categoryFilter, reasonFilter, tagFilter, invoicesOnly],
   )
   const { visible: paged, hasMore, loadMore } = usePagedList(visible)
 
@@ -51,7 +51,12 @@ export function CollectionPage() {
         </Link>
       </header>
 
-      {(records?.length ?? 0) > 0 && (
+      <nav aria-label={t('invoice.collectionViews')} className="mt-3 grid grid-cols-2 border-b border-line dark:border-dusk-line">
+        <Link to="/" aria-current={!invoicesOnly ? 'page' : undefined} className={`min-h-12 content-center border-b-2 text-center font-medium ${!invoicesOnly ? 'border-terracotta' : 'border-transparent'}`}>{t('collection.title')}</Link>
+        <Link to="/invoices" aria-current={invoicesOnly ? 'page' : undefined} className={`min-h-12 content-center border-b-2 text-center font-medium ${invoicesOnly ? 'border-terracotta' : 'border-transparent'}`}>{t('invoice.tab')}</Link>
+      </nav>
+
+      {!invoicesOnly && (records?.length ?? 0) > 0 && (
         <InsightsBlock records={records ?? []} categories={categories} />
       )}
 
@@ -104,6 +109,7 @@ export function CollectionPage() {
       )}
 
       <div className="mt-4 space-y-3">
+        {invoicesOnly && records && visible.length === 0 && <p className="py-8 text-center text-sm">{t('invoice.empty')}</p>}
         {records && visible.length === 0 && records.length === 0 ? (
           <div className="flex flex-col items-center gap-6 px-6 py-20 text-center">
             <div className="flex h-20 w-20 items-center justify-center rounded-full bg-terracotta-soft text-terracotta dark:bg-dusk-line/60 dark:text-dusk-ink">
@@ -121,7 +127,7 @@ export function CollectionPage() {
         ) : (
           <>
             {paged.map((rec) => (
-              <RecordCard key={rec.id} record={rec} categories={categories} defaultCurrency={defaultCurrency} />
+              <RecordCard key={rec.id} record={rec} categories={categories} defaultCurrency={defaultCurrency} invoiceView={invoicesOnly} />
             ))}
             {hasMore && (
               <button

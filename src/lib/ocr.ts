@@ -1,4 +1,6 @@
-import type { OcrConfig } from '../db/types'
+import type { OcrConfig, RecordItem } from '../db/types'
+import type { InvoiceDetails } from '../db/invoice'
+import { isObject, sanitizeInvoice, sanitizeItemDetails } from './invoice'
 
 /**
  * Pluggable OCR (spec §3). Default implementation targets any
@@ -14,7 +16,8 @@ export interface ParsedReceipt {
   date?: string
   total?: number
   currency?: string
-  items?: Array<{ name: string; qty?: number; unitPrice?: number; originalPrice?: number }>
+  items?: Array<Omit<RecordItem, 'id'>>
+  invoice?: InvoiceDetails
 }
 
 export interface OcrProvider {
@@ -39,9 +42,11 @@ async function blobToDataUrl(blob: Blob): Promise<string> {
   return `data:${blob.type || 'application/octet-stream'};base64,${toBase64(await blob.arrayBuffer())}`
 }
 
-const PROMPT = `Extract receipt data from this image. Reply with ONLY a JSON object (no markdown) shaped as:
-{"merchant": string|null, "date": "yyyy-mm-dd"|null, "total": number|null, "currency": string|null, "items": [{"name": string, "qty": number|null, "unitPrice": number|null, "originalPrice": number|null}]|null}.
-Omit keys you cannot determine. originalPrice = the printed pre-discount price, only when a discount is shown. Currency should be an ISO 4217 code.`
+const PROMPT = `Transcribe and extract the ENTIRE receipt image including header, every line, payment blocks, footers, policies, coupons and loyalty. Reply with ONLY one JSON object:
+{"merchant":string,"date":"yyyy-mm-dd","total":number,"currency":"ISO4217","items":[{"name":string,"rawName":string,"rawText":string,"qty":number,"quantityText":"decimal","unit":string,"unitPrice":number,"originalPrice":number,"lineTotal":"signed decimal","listLineTotal":"decimal","priceQuantity":"decimal","priceUnit":string,"priceBasis":"printed_unit|after_line_discounts|after_allocated_discounts|unknown","lineKind":"purchase|gift|adjustment|return|other","sku":string,"barcode":string,"barcodeScope":string,"taxMarker":string,"extra":{}}],"invoice":{"transcript":"complete text as printed, with line breaks","documentTypes":[string],"invoiceNumber":string,"country":string,"languages":[string],"dateRaw":string,"time":string,"copyType":string,"merchantDetails":{},"currencyEvidence":{"code":string,"source":"explicit_code|inferred|unknown","raw":string,"section":string},"regional":{},"totals":{"subtotal":"decimal","payable":"decimal","discounts":"signed decimal as printed","savings":"decimal","rounding":"signed decimal","tax":"decimal","change":"decimal","itemCount":"decimal"},"payments":[{"method":string,"brand":string,"network":string,"amount":"decimal","currency":string,"instrument":"as printed","balanceAfter":"decimal","gateway":{}}],"adjustments":[{"label":string,"rawText":string,"kind":string,"amount":"signed change to payable","scope":"line|group|receipt","includedInLineTotal":boolean,"scheme":{},"eligibleSubsetNote":string}],"taxBreakdown":[{}],"loyalty":[{}],"coupons":[{}],"rebates":[{}],"sections":[{}],"policies":{},"evidence":[{"path":string,"raw":string,"method":"printed|inferred|derived"}],"completeness":{"items":boolean,"payments":boolean,"adjustments":boolean},"extra":{}}}.
+Omit unknown fields; never invent values, missing digits, dates or tax. Preserve masks, leading zeros, zero amounts and printed signs. Keep all additional fields in the relevant object/extra, including local invoice IDs, ROC date periods, payment references, points/stamps, expiry and return terms. A period is not a transaction date. Currency may appear in a payment block but may differ from purchase currency; record its scope. A symbol such as ¥ is ambiguous. Never infer tax from country alone.
+Assign each item a unique sourceLineId string (e.g. L1). When printed evidence links an adjustment to specific items, put those sourceLineId strings in that adjustment's itemIds array; otherwise omit itemIds.
+lineTotal is the printed amount AFTER line discounts, not a list amount; omit it if that basis is unknown. unitPrice and originalPrice are PER-UNIT printed prices; never put a line total there. Keep pricing basis (148 per 100 g) separate from purchased quantity. Do not derive weight from barcodes. Never allocate receipt discounts to items without printed evidence. Do not subtract discounts already included in lineTotal. Record each adjustment once: either a signed adjustment item OR invoice.adjustments, never both. A zero-priced physical gift is a gift item; a negative FREE discount is an adjustment, not another product. Issued coupons, rebates and loyalty ads are not purchased items. Payments and rounding are not discounts. Mark completeness true only when every relevant value and its amount basis is readable; otherwise false. Preserve discrepancies for review; do not repair totals.`
 
 export function createOpenAiCompatibleProvider(): OcrProvider {
   return {
@@ -78,7 +83,11 @@ export function createOpenAiCompatibleProvider(): OcrProvider {
       const content = data.choices?.[0]?.message?.content
       if (!content) throw new Error('ocr-empty-response')
       const parsed = parseReceiptContent(content)
-      return sanitizeReceipt(parsed)
+      const receipt = sanitizeReceipt(parsed)
+      if (receipt.invoice?.sources) receipt.invoice.sources = receipt.invoice.sources.map((s) => ({
+        ...s, extractedAt: Date.now(), provider: 'openai-compatible', model: config.model,
+      }))
+      return receipt
     },
   }
 }
@@ -160,15 +169,19 @@ export function describeOcrError(err: unknown): { key: string; detail: string } 
 
 /** Extract the receipt JSON from a model reply that ignores "JSON only". */
 export function parseReceiptContent(content: string): ParsedReceipt {
+  const retain = (value: unknown): ParsedReceipt => {
+    if (!isObject(value)) throw new Error('ocr-unparseable-response')
+    return { ...value, invoice: { ...sanitizeInvoice(value.invoice), sources: [{ rawResponse: content }] } } as ParsedReceipt
+  }
   try {
-    return JSON.parse(content) as ParsedReceipt
+    return retain(JSON.parse(content))
   } catch {
     // fall through to brace scan (markdown fences, prose wrappers, …)
   }
   const json = firstJsonObject(content)
   if (json) {
     try {
-      return JSON.parse(json) as ParsedReceipt
+      return retain(JSON.parse(json))
     } catch {
       // fall through
     }
@@ -204,6 +217,9 @@ function firstJsonObject(text: string): string | null {
 /** Drop malformed fields so bad OCR output can't poison the form. */
 export function sanitizeReceipt(raw: ParsedReceipt): ParsedReceipt {
   const out: ParsedReceipt = {}
+  if (!isObject(raw)) return out
+  const invoice = sanitizeInvoice(raw.invoice)
+  if (invoice) out.invoice = invoice
   if (typeof raw.merchant === 'string' && raw.merchant) out.merchant = raw.merchant
   if (typeof raw.date === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(raw.date)) out.date = raw.date
   if (typeof raw.total === 'number' && Number.isFinite(raw.total) && raw.total >= 0) {
@@ -217,12 +233,14 @@ export function sanitizeReceipt(raw: ParsedReceipt): ParsedReceipt {
       .filter((i) => i && typeof i.name === 'string' && i.name)
       .map((i) => ({
         name: i.name,
-        qty: typeof i.qty === 'number' && i.qty > 0 ? i.qty : undefined,
-        unitPrice: typeof i.unitPrice === 'number' && i.unitPrice >= 0 ? i.unitPrice : undefined,
+        ...sanitizeItemDetails(i as unknown as Record<string, unknown>),
+        qty: typeof i.qty === 'number' && Number.isFinite(i.qty) && i.qty > 0 ? i.qty : undefined,
+        unitPrice: typeof i.unitPrice === 'number' && Number.isFinite(i.unitPrice) && i.unitPrice >= 0 ? i.unitPrice : undefined,
         // Only a genuine discount counts — originalPrice below unitPrice is
         // noise, not a deal.
         originalPrice:
           typeof i.originalPrice === 'number' &&
+          Number.isFinite(i.originalPrice) &&
           i.originalPrice > 0 &&
           typeof i.unitPrice === 'number' &&
           i.originalPrice > i.unitPrice

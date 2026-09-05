@@ -1,4 +1,5 @@
 /** Domain model — aligned with spec §4. All data lives in IndexedDB via Dexie. */
+import type { InvoiceDetails, InvoiceItemDetails } from './invoice'
 
 export type SaveReason =
   | 'want'
@@ -21,7 +22,7 @@ export const SAVE_REASONS: SaveReason[] = [
 
 export type RecordStatus = 'active' | 'archived'
 
-export interface RecordItem {
+export interface RecordItem extends InvoiceItemDetails {
   id: string
   name: string
   qty?: number
@@ -53,6 +54,8 @@ export interface ConsumptionRecord {
   favorite: boolean
   status: RecordStatus
   items?: RecordItem[]
+  /** Invoice and item views share this record and the items above. */
+  invoice?: InvoiceDetails
   createdAt: number
   updatedAt: number
 }

@@ -1,5 +1,6 @@
 import type { Category, ConsumptionRecord, SaveReason } from '../db/types'
 import { effectivePrice } from './records'
+import { invoiceSearchText } from './invoice'
 
 export type SortKey = 'createdAt' | 'date' | 'priceDesc' | 'priceAsc'
 
@@ -31,7 +32,8 @@ export function recordMatchesQuery(
     category?.name,
     category?.nameEn,
     ...rec.tags,
-    ...(rec.items?.map((i) => i.name) ?? []),
+    invoiceSearchText(rec.items),
+    invoiceSearchText(rec.invoice),
   ]
   return haystacks.some((h) => norm(h).includes(q))
 }

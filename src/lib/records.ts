@@ -9,6 +9,8 @@ import type {
 import { uid } from './uid'
 import { computeSnapshots } from './snapshots'
 import type { RateSource } from './currency'
+import { itemLineTotal, itemUnitPrice } from './invoice'
+import { decimal, decimalSum } from './decimal'
 
 export type RecordInput = Omit<
   ConsumptionRecord,
@@ -82,15 +84,20 @@ export async function backfillMissingSnapshots(
   const baseUpper = base.toUpperCase()
   const candidates = (await database.records.toArray()).filter(
     (r) =>
-      r.basePrice === undefined &&
       r.currency !== undefined &&
       r.currency.toUpperCase() !== baseUpper &&
-      (r.price !== undefined || (r.items ?? []).some((i) => i.unitPrice !== undefined)),
+      ((r.basePrice === undefined && r.price !== undefined) ||
+        (r.items ?? []).some((i) => i.baseUnitPrice === undefined && itemUnitPrice(i) !== undefined)),
   )
   let filled = 0
   for (const rec of candidates) {
     const withSnapshots = computeSnapshots(rec, base, rateSource)
-    if (withSnapshots.basePrice !== undefined || withSnapshots.items?.some((i) => i.baseUnitPrice !== undefined)) {
+    withSnapshots.basePrice = rec.basePrice ?? withSnapshots.basePrice
+    withSnapshots.items = withSnapshots.items?.map((item, index) => ({ ...item,
+      baseUnitPrice: rec.items?.[index].baseUnitPrice ?? item.baseUnitPrice,
+    }))
+    if ((rec.basePrice === undefined && withSnapshots.basePrice !== undefined) ||
+      withSnapshots.items?.some((item, index) => rec.items?.[index].baseUnitPrice === undefined && item.baseUnitPrice !== undefined)) {
       await database.records.put({ ...rec, ...withSnapshots, updatedAt: rec.updatedAt })
       filled++
     }
@@ -195,17 +202,8 @@ export async function deleteCategory(
 
 /** Sum of qty×unitPrice over items; undefined when nothing computable. */
 export function itemsAutoTotal(items: RecordItem[] | undefined): number | undefined {
-  if (!items || items.length === 0) return undefined
-  let sum = 0
-  let any = false
-  for (const it of items) {
-    const qty = it.qty ?? 1
-    if (it.unitPrice !== undefined) {
-      sum += qty * it.unitPrice
-      any = true
-    }
-  }
-  return any ? sum : undefined
+  const amounts = (items ?? []).map(itemLineTotal).filter((v): v is string => v !== undefined)
+  return amounts.length ? Number(decimalSum(amounts)) : undefined
 }
 
 /**
@@ -214,5 +212,5 @@ export function itemsAutoTotal(items: RecordItem[] | undefined): number | undefi
  * data level: callers may keep `price` even when items exist (外幣找零 etc.).
  */
 export function effectivePrice(rec: ConsumptionRecord): number | undefined {
-  return rec.price ?? itemsAutoTotal(rec.items)
+  return rec.price ?? (decimal(rec.invoice?.totals?.payable) !== undefined ? Number(rec.invoice!.totals!.payable) : itemsAutoTotal(rec.items))
 }

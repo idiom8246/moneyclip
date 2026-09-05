@@ -21,7 +21,7 @@ export default defineConfig({
         theme_color: '#faf7f1',
         background_color: '#faf7f1',
         display: 'standalone',
-        start_url: '/',
+        start_url: './',
         icons: [
           { src: 'icons/icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
           { src: 'icons/icon-192.png', sizes: '192x192', type: 'image/png' },

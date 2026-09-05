@@ -115,18 +115,22 @@ export function DossierPage() {
                         <p className="text-xs tabular-nums text-ink-soft dark:text-dusk-soft">
                           {p.date ?? ''}
                           {p.qty !== undefined && ` · ×${p.qty}`}
+                          {p.unit && ` ${p.unit}`}
                           {p.originalPrice !== undefined && p.unitPrice !== undefined && p.originalPrice > p.unitPrice && (
                             <span className="ml-1.5 text-terracotta-deep dark:text-dusk-ink">
                               {t('dossier.was', { price: formatMoney(p.originalPrice, p.currency ?? defaultCurrency, i18n.language) })}
                             </span>
                           )}
                         </p>
+                        {p.priceBasis && <p className="mt-1 text-xs">{t(`invoice.basis.${p.priceBasis}`)}</p>}
+                        {p.unallocatedDiscount && <p className="mt-1 text-xs">{t('invoice.issues.unallocated')}</p>}
                       </div>
                       <div className="shrink-0 text-right">
                         <p className="text-sm font-semibold tabular-nums">
                           {p.unitPrice !== undefined
                             ? formatMoney(p.unitPrice, p.currency ?? defaultCurrency, i18n.language)
                             : '—'}
+                          {p.unit && <span className="block text-xs font-normal">/ {p.unit}</span>}
                         </p>
                         {showConverted && p.converted !== undefined && (
                           <p className="text-xs tabular-nums text-ink-soft dark:text-dusk-soft">

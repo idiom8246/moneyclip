@@ -1,4 +1,5 @@
 import type { RecordItem, SaveReason } from '../db/types'
+import type { InvoiceDetails } from '../db/invoice'
 
 /**
  * Unsaved add-form draft (spec §6.2 spirit: never lose the user's work).
@@ -10,12 +11,14 @@ export interface FormDraft {
   price: string
   currency: string
   date: string
+  dateTouched?: boolean
   merchant: string
   saveReason?: SaveReason
   categoryId: string
   tags: string[]
   note: string
   items: RecordItem[]
+  invoice?: InvoiceDetails
   photos: Array<{ key: string; blob: Blob; thumbBlob: Blob }>
   updatedAt: number
 }
@@ -51,6 +54,7 @@ export function isDraftMeaningful(draft: FormDraft): boolean {
       draft.merchant.trim() ||
       draft.note.trim() ||
       draft.price ||
+      draft.invoice ||
       draft.photos.length > 0 ||
       draft.items.some((i) => i.name.trim() || i.barcode),
   )

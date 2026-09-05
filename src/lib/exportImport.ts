@@ -20,6 +20,8 @@ export interface ExportedAttachment {
   createdAt: number
   blobBase64?: string
   thumbBase64?: string
+  mimeType?: string
+  thumbMimeType?: string
 }
 
 export interface ExportBundle {
@@ -81,6 +83,8 @@ export async function exportJSON(
       id: a.id,
       recordId: a.recordId,
       createdAt: a.createdAt,
+      mimeType: a.blob.type,
+      thumbMimeType: a.thumbBlob.type,
       ...(opts.includeImages
         ? { blobBase64: await blobToBase64(a.blob), thumbBase64: await blobToBase64(a.thumbBlob) }
         : {}),
@@ -187,8 +191,8 @@ export async function importJSON(
             id: a.id,
             recordId: a.recordId,
             createdAt: a.createdAt,
-            blob: base64ToBlob(a.blobBase64!),
-            thumbBlob: base64ToBlob(a.thumbBase64!),
+            blob: base64ToBlob(a.blobBase64!, a.mimeType || 'image/jpeg'),
+            thumbBlob: base64ToBlob(a.thumbBase64!, a.thumbMimeType || 'image/jpeg'),
           }))
         await db.attachments.bulkPut(restored)
       }

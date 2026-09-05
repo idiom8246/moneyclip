@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { PageHeader } from '../components/ui'
 import { IconStar, IconTrash, IconArchive } from '../components/icons'
 import { useAttachments, useCategories, useRateSource, useRecord, useSetting } from '../hooks'
@@ -8,7 +8,8 @@ import { convert, formatMoney } from '../lib/currency'
 import { joinMerchantDate } from '../lib/format'
 import { blobUrl, releaseBlobUrl } from '../lib/images'
 import { deleteRecord, effectivePrice, setArchived, toggleFavorite } from '../lib/records'
-import { itemKey } from '../lib/analytics'
+import { InvoiceDetails } from '../components/InvoiceDetails'
+import { ItemDetails } from '../components/ItemDetails'
 import { addFromItem } from '../lib/inventory'
 import { useToast } from '../components/Toast'
 import { categoryDisplayName } from '../lib/search'
@@ -17,6 +18,8 @@ import { getSetting, setSetting } from '../lib/settings'
 export function RecordDetailPage() {
   const { t, i18n } = useTranslation()
   const { id } = useParams()
+  const [params, setParams] = useSearchParams()
+  const tab = params.get('tab') === 'invoice' ? 'invoice' : 'items'
   const navigate = useNavigate()
   const record = useRecord(id)
   const categories = useCategories() ?? []
@@ -155,48 +158,29 @@ export function RecordDetailPage() {
         ))}
       </div>
 
-      {record.items && record.items.length > 0 && (
-        <section className="mt-5">
-          <h3 className="mb-2 text-xs font-semibold uppercase tracking-wider text-ink-soft dark:text-dusk-soft">
-            {t('detail.items')}
-          </h3>
-          <table className="w-full text-sm">
-            <tbody>
-              {record.items.map((item) => (
-                <tr key={item.id} className="border-b border-line/70 last:border-0 dark:border-dusk-line/70">
-                  <td className="py-2 pr-2">
-                    <Link
-                      to={`/product/${encodeURIComponent(itemKey(item))}`}
-                      className="underline decoration-line decoration-1 underline-offset-2 active:opacity-70 dark:decoration-dusk-line"
-                    >
-                      {item.name}
-                    </Link>
-                  </td>
-                  <td className="py-2 pr-2 text-right tabular-nums text-ink-soft dark:text-dusk-soft">
-                    {item.qty ?? 1} × {item.unitPrice ?? '—'}
-                  </td>
-                  <td className="py-2 text-right font-medium tabular-nums">
-                    <span className="inline-flex items-center justify-end gap-1.5">
-                      {item.unitPrice !== undefined ? (item.qty ?? 1) * item.unitPrice : ''}
-                      {item.name.trim() && record && (
-                        <button
-                          type="button"
-                          onClick={() => trackItem(item.name, item.barcode)}
-                          aria-label={`${t('inventory.addToInventory')}: ${item.name}`}
-                          title={t('inventory.addToInventory')}
-                          className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-terracotta-soft text-sm font-semibold text-terracotta-deep active:scale-95 dark:bg-dusk-line dark:text-dusk-ink"
-                        >
-                          +
-                        </button>
-                      )}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </section>
-      )}
+      <div role="tablist" aria-label={t('invoice.views')} className="mt-5 grid grid-cols-2 border-b border-line dark:border-dusk-line">
+        {(['items', 'invoice'] as const).map((value) => <button
+          key={value} id={`record-tab-${value}`} type="button" role="tab" aria-selected={tab === value}
+          aria-controls={`record-panel-${value}`} tabIndex={tab === value ? 0 : -1}
+          onClick={() => setParams({ tab: value }, { replace: true })}
+          onKeyDown={(event) => {
+            if (['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
+              event.preventDefault()
+              const next = event.key === 'Home' ? 'items' : event.key === 'End' ? 'invoice' : value === 'items' ? 'invoice' : 'items'
+              setParams({ tab: next }, { replace: true })
+              document.getElementById(`record-tab-${next}`)?.focus()
+            }
+          }}
+          className={`min-h-12 border-b-2 px-3 font-medium ${tab === value ? 'border-terracotta text-terracotta-deep dark:text-dusk-ink' : 'border-transparent text-ink dark:text-dusk-soft'}`}
+        >{t(value === 'invoice' ? 'invoice.tab' : 'invoice.itemsTab')}</button>)}
+      </div>
+      <div id={`record-panel-${tab}`} role="tabpanel" aria-labelledby={`record-tab-${tab}`}>
+        {tab === 'invoice' ? <InvoiceDetails record={record} onOpenSource={(attachmentId) => {
+          const index = attachments?.findIndex((a) => a.id === attachmentId) ?? -1
+          if (index >= 0) void openLightbox(index)
+          else toast(t('invoice.sourceMissing'))
+        }} /> : <ItemDetails items={record.items ?? []} currency={currency} onTrack={(item) => trackItem(item.name, item.barcode)} />}
+      </div>
 
       {record.note && (
         <section className="mt-5">

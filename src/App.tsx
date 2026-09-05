@@ -22,6 +22,7 @@ export default function App() {
         <main className="flex-1 overflow-y-auto pb-32">
           <Routes>
             <Route path="/" element={<CollectionPage />} />
+            <Route path="/invoices" element={<CollectionPage invoicesOnly />} />
             <Route path="/add" element={<RecordFormPage />} />
             <Route path="/record/:id" element={<RecordDetailPage />} />
             <Route path="/record/:id/edit" element={<RecordFormPage />} />

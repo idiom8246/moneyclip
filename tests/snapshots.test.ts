@@ -8,6 +8,17 @@ const fx: RateSource = { manualRates: { JPY: 4.5 } }
 const snap = { base: 'HKD', rateSource: fx }
 
 describe('currency snapshots', () => {
+  it('backfills net line-only prices once without replacing an existing snapshot', async () => {
+    const db = await freshDb()
+    const rec = await createRecord({ title: 'net', currency: 'JPY', basePrice: 123,
+      items: [{ id: 'i', name: 'tea', qty: 2, lineTotal: '90.00' }],
+    }, db)
+    expect(await backfillMissingSnapshots(db, 'HKD', fx)).toBe(1)
+    const saved = await db.records.get(rec.id)
+    expect(saved?.basePrice).toBe(123)
+    expect(saved?.items?.[0].baseUnitPrice).toBe(10)
+    expect(await backfillMissingSnapshots(db, 'HKD', fx)).toBe(0)
+  })
   it('freezes basePrice + item.baseUnitPrice for foreign-currency records', async () => {
     const db = await freshDb()
     const rec = await createRecord(

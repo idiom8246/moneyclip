@@ -1,5 +1,7 @@
 import type { RateSource } from './currency'
 import { convert } from './currency'
+import { itemUnitPrice } from './invoice'
+import type { RecordItem } from '../db/types'
 
 /**
  * Currency snapshots — freeze an amount in the default currency at save
@@ -14,7 +16,7 @@ export function computeSnapshots<
     price?: number
     currency?: string
     basePrice?: number
-    items?: Array<{ unitPrice?: number; baseUnitPrice?: number }>
+    items?: Array<Partial<RecordItem>>
   },
 >(input: T, base: string, rateSource: RateSource): T {
   const currency = (input.currency ?? base).toUpperCase()
@@ -32,10 +34,11 @@ export function computeSnapshots<
   if (input.items) {
     out.items = input.items.map((it) => {
       const item = { ...it }
-      if (isBase || it.unitPrice === undefined) {
+      const price = itemUnitPrice({ id: '', name: '', ...it })
+      if (isBase || price === undefined) {
         delete item.baseUnitPrice
       } else {
-        item.baseUnitPrice = convert(it.unitPrice, currency, base, rateSource) ?? undefined
+        item.baseUnitPrice = convert(price, currency, base, rateSource) ?? undefined
       }
       return item
     })

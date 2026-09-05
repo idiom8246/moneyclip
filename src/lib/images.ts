@@ -1,9 +1,7 @@
 /**
- * Image processing: downscale via canvas (spec §4 attachments).
- * Original ↔ longest side ≤ 2000px (JPEG q0.8); thumbnail ≤ 400px.
+ * Keep original invoice bytes as evidence; generate a small display thumbnail.
  */
 
-const MAX_FULL = 2000
 const MAX_THUMB = 400
 const QUALITY = 0.8
 
@@ -50,11 +48,8 @@ export async function processImageFile(file: File | Blob): Promise<ProcessedImag
     reader.readAsDataURL(file)
   })
   const img = await loadImage(dataUrl)
-  const [blob, thumbBlob] = await Promise.all([
-    resizeTo(img, MAX_FULL),
-    resizeTo(img, MAX_THUMB),
-  ])
-  return { blob, thumbBlob }
+  const thumbBlob = await resizeTo(img, MAX_THUMB)
+  return { blob: file, thumbBlob }
 }
 
 const objectUrls = new Set<string>()
