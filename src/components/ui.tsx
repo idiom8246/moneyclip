@@ -21,8 +21,8 @@ export function Chip({
       aria-pressed={active}
       className={`inline-flex min-h-11 items-center gap-1 rounded-full px-3.5 py-1.5 text-sm transition-all active:scale-95 ${
         active
-          ? 'bg-terracotta-deep text-paper shadow-sm shadow-terracotta/30'
-          : 'bg-terracotta-soft/60 text-ink hover:bg-terracotta-soft dark:bg-dusk-line/60 dark:text-dusk-ink dark:hover:bg-dusk-line'
+          ? 'btn-cobalt font-medium'
+          : 'glass-soft text-ink hover:brightness-[1.03] dark:text-dusk-ink'
       } ${className}`}
     >
       {children}
@@ -41,18 +41,18 @@ export function PageHeader({
 }) {
   const { t } = useTranslation()
   return (
-    <header className="sticky top-0 z-30 flex min-h-14 items-center gap-2 border-b border-line/60 bg-paper/85 px-2 py-2 backdrop-blur-xl dark:border-dusk-line/60 dark:bg-dusk/85">
+    <header className="flex min-h-12 items-center gap-2 py-1">
       {onBack && (
         <button
           type="button"
           onClick={onBack}
           aria-label={t('common.back')}
-          className="flex h-11 w-11 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-terracotta-soft/60 active:scale-95 dark:text-dusk-soft dark:hover:bg-dusk-line/60"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-soft transition-all hover:bg-cobalt-soft/60 active:scale-95 dark:text-dusk-soft dark:hover:bg-dusk-line/60"
         >
           <IconBack />
         </button>
       )}
-      <h1 className="flex-1 truncate text-xl font-semibold tracking-tight">{title}</h1>
+      <h1 className="flex-1 truncate font-display text-xl font-semibold tracking-[-0.025em] [font-stretch:110%]">{title}</h1>
       {action}
     </header>
   )
@@ -66,7 +66,7 @@ export function GhostButton({
     <button
       type="button"
       {...props}
-      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-line px-4 py-2 text-sm font-medium text-ink transition-all hover:bg-terracotta-soft/50 active:scale-[0.97] disabled:opacity-50 dark:border-dusk-line dark:text-dusk-ink dark:hover:bg-dusk-line/50 ${className}`}
+      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-paper-raised/40 px-4 py-2 text-sm font-medium text-ink shadow-[inset_0_0_0_1px_var(--hairline)] transition-all hover:bg-paper-raised/70 active:scale-[0.97] disabled:opacity-50 dark:bg-dusk-raised/40 dark:text-dusk-ink dark:hover:bg-dusk-raised/70 ${className}`}
     />
   )
 }
@@ -79,13 +79,16 @@ export function PrimaryButton({
     <button
       type="button"
       {...props}
-      className={`inline-flex min-h-11 items-center justify-center gap-2 rounded-xl bg-gradient-to-b from-terracotta to-terracotta-deep px-4 py-2.5 text-sm font-semibold text-paper shadow-md shadow-terracotta/25 transition-all hover:brightness-105 active:scale-[0.97] disabled:opacity-50 dark:shadow-terracotta/10 ${className}`}
+      className={`btn-cobalt inline-flex min-h-11 items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all hover:brightness-110 active:scale-[0.97] disabled:opacity-50 ${className}`}
     />
   )
 }
 
+/* Fields are hairline wells, not second glass layers — they sit ON glass
+   section plates (nested glassmorphism reads as mud). Keyboard focus keeps
+   the global 2px outline; the cobalt inset ring is the touch-state layer. */
 export const fieldClass =
-  'w-full min-w-0 min-h-11 rounded-xl border border-line bg-paper-raised px-3.5 py-2.5 text-base text-ink shadow-sm shadow-ink/[0.03] placeholder:text-ink-soft/60 transition-colors focus:border-terracotta focus:outline-none focus:ring-2 focus:ring-terracotta/20 dark:border-dusk-line dark:bg-dusk-raised dark:text-dusk-ink dark:placeholder:text-dusk-soft/60 dark:shadow-none'
+  'w-full min-w-0 min-h-11 rounded-xl bg-paper-raised/45 px-3.5 py-2.5 text-base text-ink shadow-[inset_0_0_0_1px_var(--hairline)] placeholder:text-ink-soft transition-shadow focus-visible:outline-2 focus-visible:outline-cobalt dark:focus-visible:outline-cobalt-lift focus:shadow-[inset_0_0_0_1.5px_var(--color-cobalt),0_1px_6px_rgb(33_72_184/18%)] dark:bg-dusk/45 dark:text-dusk-ink dark:placeholder:text-dusk-soft dark:focus:shadow-[inset_0_0_0_1.5px_var(--color-cobalt-lift),0_1px_6px_rgb(147_171_242/18%)]'
 
 export function Field({
   label,
@@ -98,7 +101,7 @@ export function Field({
 }) {
   return (
     <label className={`block ${className}`}>
-      <span className="mb-1.5 block text-sm font-medium text-ink-soft dark:text-dusk-soft">
+      <span className="mb-1.5 block text-[13px] font-medium text-ink-soft dark:text-dusk-soft">
         {label}
       </span>
       {children}
@@ -111,16 +114,18 @@ export function SectionCard({
   title,
   icon,
   children,
+  className = '',
 }: {
   title: string
   icon?: ReactNode
   children: ReactNode
+  className?: string
 }) {
   return (
-    <section className="rounded-2xl bg-paper-raised p-4 shadow-sm shadow-ink/[0.04] ring-1 ring-line dark:bg-dusk-raised dark:ring-dusk-line dark:shadow-none">
-      <h2 className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-ink-soft dark:text-dusk-soft">
+    <section className={`glass-soft rounded-[20px] p-4 ${className}`}>
+      <h2 className="mb-3 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-soft dark:text-dusk-soft">
         {icon && (
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-terracotta-soft text-terracotta dark:bg-dusk-line dark:text-dusk-ink [&>svg]:h-4 [&>svg]:w-4">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-cobalt-soft text-cobalt dark:bg-cobalt-lift/15 dark:text-cobalt-lift [&>svg]:h-4 [&>svg]:w-4">
             {icon}
           </span>
         )}
@@ -145,15 +150,15 @@ export function DisclosureCard({
 }) {
   const [open, setOpen] = useState(defaultOpen)
   return (
-    <section className="rounded-2xl bg-paper-raised shadow-sm shadow-ink/[0.04] ring-1 ring-line dark:bg-dusk-raised dark:ring-dusk-line dark:shadow-none">
+    <section className="glass-soft rounded-[20px]">
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
-        className="flex min-h-12 w-full items-center gap-2 p-4 text-xs font-semibold uppercase tracking-wider text-ink-soft transition-colors dark:text-dusk-soft"
+        className="flex min-h-12 w-full items-center gap-2 p-4 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-soft transition-colors dark:text-dusk-soft"
       >
         {icon && (
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-terracotta-soft text-terracotta dark:bg-dusk-line dark:text-dusk-ink [&>svg]:h-4 [&>svg]:w-4">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-cobalt-soft text-cobalt dark:bg-cobalt-lift/15 dark:text-cobalt-lift [&>svg]:h-4 [&>svg]:w-4">
             {icon}
           </span>
         )}

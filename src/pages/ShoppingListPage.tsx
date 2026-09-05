@@ -38,13 +38,13 @@ export function ShoppingListPage() {
           onKeyDown={(e) => e.key === 'Enter' && submit()}
           placeholder={t('list.addItem')}
           aria-label={t('list.addItem')}
-          className="w-full min-w-0 min-h-11 rounded-xl border border-line bg-paper-raised px-3.5 text-base text-ink focus:border-terracotta focus:outline-none dark:border-dusk-line dark:bg-dusk-raised dark:text-dusk-ink"
+          className="glass-soft w-full min-w-0 min-h-11 rounded-xl px-3.5 text-base text-ink focus:outline-none focus:ring-2 focus:ring-cobalt/25 dark:text-dusk-ink"
         />
         <button
           type="button"
           onClick={submit}
           disabled={!draft.trim()}
-          className="min-h-11 shrink-0 rounded-xl bg-terracotta px-4 text-sm font-semibold text-paper disabled:opacity-40"
+          className="btn-cobalt min-h-11 shrink-0 rounded-xl px-4 text-sm font-semibold transition-all active:scale-[0.97] disabled:opacity-40"
         >
           {t('common.add')}
         </button>
@@ -58,7 +58,7 @@ export function ShoppingListPage() {
             {[...unchecked, ...checked].map((item) => (
               <li
                 key={item.id}
-                className={`flex min-h-12 items-center gap-3 rounded-xl bg-paper-raised px-3 ring-1 ring-line dark:bg-dusk-raised dark:ring-dusk-line ${
+                className={`glass-soft flex min-h-12 items-center gap-3 rounded-xl px-3 ${
                   item.checked ? 'opacity-50' : ''
                 }`}
               >
@@ -68,10 +68,10 @@ export function ShoppingListPage() {
                   aria-checked={item.checked ? 'true' : 'false'}
                   aria-label={item.name}
                   onClick={() => void toggleShoppingItem(item.id)}
-                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md border transition-colors ${
+                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md transition-all ${
                     item.checked
-                      ? 'border-terracotta bg-terracotta text-paper'
-                      : 'border-line dark:border-dusk-line'
+                      ? 'btn-cobalt'
+                      : 'shadow-[inset_0_0_0_1.5px_var(--hairline)]'
                   }`}
                 >
                   {item.checked ? '✓' : ''}
@@ -99,13 +99,13 @@ export function ShoppingListPage() {
 
           <div className="mt-4 flex items-center justify-between">
             <span className="text-sm text-ink-soft dark:text-dusk-soft">{t('list.estTotal')}</span>
-            <span className="text-lg font-semibold tabular-nums">{formatMoney(estTotal, 'HKD', i18n.language)}</span>
+            <span className="font-display text-lg font-bold tabular-nums">{formatMoney(estTotal, 'HKD', i18n.language)}</span>
           </div>
           {checked.length > 0 && (
             <button
               type="button"
               onClick={() => void clearDoneShoppingItems()}
-              className="mt-3 min-h-11 w-full rounded-xl border border-line text-sm text-ink-soft dark:border-dusk-line dark:text-dusk-soft"
+              className="glass-soft mt-3 min-h-11 w-full rounded-xl text-sm text-ink-soft transition-all active:scale-[0.99] dark:text-dusk-soft"
             >
               {t('list.clearDone')}
             </button>

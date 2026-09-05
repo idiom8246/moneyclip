@@ -1,16 +1,18 @@
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link, useNavigate, useSearchParams } from 'react-router-dom'
-import { ReceiptText } from 'lucide-react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
+import { Link } from 'react-router-dom'
+import { SlidersHorizontal } from 'lucide-react'
+import { EmptyState } from '../components/EmptyState'
 import { InsightsBlock } from '../components/InsightsBlock'
 import { RecordCard } from '../components/RecordCard'
-import { Chip } from '../components/ui'
-import { IconSettings } from '../components/icons'
+import { Chip, PageHeader } from '../components/ui'
+import { IconBookmark } from '../components/icons'
 import { useAllTags, useCategories, usePagedList, useRecords, useSetSearchParam, useSetting } from '../hooks'
 import { searchRecords, categoryDisplayName, type SortKey } from '../lib/search'
 import { SAVE_REASONS, type SaveReason } from '../db/types'
 
-export function CollectionPage({ invoicesOnly = false }: { invoicesOnly?: boolean }) {
+export function CollectionPage({ invoicesOnly = false, mode }: { invoicesOnly?: boolean; mode?: 'invoices' | 'saved' }) {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const [searchParams, setSearchParams] = useSearchParams()
@@ -21,76 +23,141 @@ export function CollectionPage({ invoicesOnly = false }: { invoicesOnly?: boolea
   const defaultCurrency = useSetting('defaultCurrency')
 
   const [sort, setSort] = useState<SortKey>('createdAt')
-  const favoriteOnly = searchParams.get('fav') === '1'
+  const [filtersOpen, setFiltersOpen] = useState(false)
+  const isSaved = mode === 'saved'
+  const invoiceMode = invoicesOnly || mode === 'invoices'
+  const favoriteOnly = isSaved || searchParams.get('fav') === '1'
   const categoryFilter = searchParams.get('cat') ?? null
   const reasonFilter = searchParams.get('reason') as SaveReason | null
   const tagFilter = searchParams.get('tag') ?? null
 
   const visible = useMemo(
     () =>
-      searchRecords((records ?? []).filter((record) => !invoicesOnly || !!record.invoice), categories, '', {
+      searchRecords((records ?? []).filter((record) => !invoiceMode || !!record.invoice), categories, '', {
         favoriteOnly,
         categoryId: categoryFilter,
         saveReason: reasonFilter,
         tag: tagFilter,
       }, sort),
-    [records, categories, sort, favoriteOnly, categoryFilter, reasonFilter, tagFilter, invoicesOnly],
+    [records, categories, sort, favoriteOnly, categoryFilter, reasonFilter, tagFilter, invoiceMode],
   )
   const { visible: paged, hasMore, loadMore } = usePagedList(visible)
+  const selectedCategory = categories.find((c) => c.id === categoryFilter)
+  const filterCount =
+    Number(!isSaved && favoriteOnly) + Number(Boolean(categoryFilter)) + Number(Boolean(reasonFilter)) + Number(Boolean(tagFilter))
+  const hasNarrowingFilters = Boolean(categoryFilter || reasonFilter || tagFilter || (!isSaved && favoriteOnly))
+  const clearFilters = () => setSearchParams({}, { replace: true })
 
   return (
     <div className="px-4 pb-4">
-      <header className="sticky top-0 z-30 -mx-4 flex min-h-14 items-center justify-between border-b border-line/60 bg-paper/85 px-4 py-2 backdrop-blur-xl dark:border-dusk-line/60 dark:bg-dusk/85">
-        <h1 className="text-2xl font-bold tracking-tight">{t('collection.title')}</h1>
-        <Link
-          to="/settings"
-          aria-label={t('settings.title')}
-          className="flex h-11 w-11 items-center justify-center rounded-full text-ink-soft transition-colors hover:bg-terracotta-soft/60 active:scale-95 dark:text-dusk-soft dark:hover:bg-dusk-line/60"
-        >
-          <IconSettings />
-        </Link>
-      </header>
+      <PageHeader title={isSaved ? t('nav.collection') : t('nav.invoices')} />
 
       <nav aria-label={t('invoice.collectionViews')} className="mt-3 grid grid-cols-2 border-b border-line dark:border-dusk-line">
-        <Link to="/" aria-current={!invoicesOnly ? 'page' : undefined} className={`min-h-12 content-center border-b-2 text-center font-medium ${!invoicesOnly ? 'border-terracotta' : 'border-transparent'}`}>{t('collection.title')}</Link>
-        <Link to="/invoices" aria-current={invoicesOnly ? 'page' : undefined} className={`min-h-12 content-center border-b-2 text-center font-medium ${invoicesOnly ? 'border-terracotta' : 'border-transparent'}`}>{t('invoice.tab')}</Link>
+        <Link to="/" aria-current={!invoiceMode ? 'page' : undefined} className={`min-h-12 content-center border-b-2 text-center font-medium ${!invoiceMode ? 'border-terracotta' : 'border-transparent'}`}>{t('collection.title')}</Link>
+        <Link to="/invoices" aria-current={invoiceMode ? 'page' : undefined} className={`min-h-12 content-center border-b-2 text-center font-medium ${invoiceMode ? 'border-terracotta' : 'border-transparent'}`}>{t('invoice.tab')}</Link>
       </nav>
 
-      {!invoicesOnly && (records?.length ?? 0) > 0 && (
+      {!isSaved && (records?.length ?? 0) > 0 && (
         <InsightsBlock records={records ?? []} categories={categories} />
       )}
 
       {(records?.length ?? 0) > 0 && (
         <>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Chip active={!favoriteOnly && !categoryFilter && !reasonFilter && !tagFilter}
-              onClick={() => setSearchParams({}, { replace: true })}>
+          <div className="-mx-4 mt-3 flex items-center gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            <Chip active={!hasNarrowingFilters} onClick={clearFilters} className="shrink-0">
               {t('common.all')}
             </Chip>
-            <Chip active={favoriteOnly} onClick={() => setParam('fav', favoriteOnly ? null : '1')}>
-              ★ {t('collection.favorites')}
-            </Chip>
-            {categories.map((c) => (
-              <Chip key={c.id} active={categoryFilter === c.id}
-                onClick={() => setParam('cat', categoryFilter === c.id ? null : c.id)}>
-                {c.icon} {categoryDisplayName(c, i18n.language)}
+            {!isSaved && favoriteOnly && (
+              <Chip active onClick={() => setParam('fav', null)} className="shrink-0">
+                <IconBookmark filled className="h-3.5 w-3.5" /> {t('collection.favorites')}
               </Chip>
-            ))}
-            {SAVE_REASONS.map((r) => (
-              <Chip key={r} active={reasonFilter === r}
-                onClick={() => setParam('reason', reasonFilter === r ? null : r)}>
-                {t(`reasons.${r}`)}
+            )}
+            {selectedCategory && (
+              <Chip active onClick={() => setParam('cat', null)} className="shrink-0">
+                {selectedCategory.icon} {categoryDisplayName(selectedCategory, i18n.language)}
               </Chip>
-            ))}
-            {allTags.slice(0, 12).map((tag) => (
-              <Chip key={tag} active={tagFilter === tag}
-                onClick={() => setParam('tag', tagFilter === tag ? null : tag)}>
-                #{tag}
+            )}
+            {reasonFilter && (
+              <Chip active onClick={() => setParam('reason', null)} className="shrink-0">
+                {t(`reasons.${reasonFilter}`)}
               </Chip>
-            ))}
+            )}
+            {tagFilter && (
+              <Chip active onClick={() => setParam('tag', null)} className="shrink-0">#{tagFilter}</Chip>
+            )}
+            <button
+              type="button"
+              onClick={() => setFiltersOpen((open) => !open)}
+              aria-expanded={filtersOpen}
+              className={`inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-full px-3.5 py-1.5 text-sm font-medium transition-all active:scale-95 ${
+                filtersOpen || filterCount > 0
+                  ? 'bg-cobalt-soft text-cobalt-deep dark:bg-cobalt-lift/15 dark:text-cobalt-lift'
+                  : 'glass-soft text-ink dark:text-dusk-ink'
+              }`}
+            >
+              <SlidersHorizontal className="h-4 w-4" aria-hidden />
+              {t('collection.moreFilters')}
+              {filterCount > 0 && <span className="tabular-nums">{filterCount}</span>}
+            </button>
           </div>
 
-          <div className="mt-3 flex justify-end">
+          {filtersOpen && (
+            <section className="glass-soft animate-rise-in mt-2 space-y-4 rounded-[20px] p-4" aria-label={t('collection.moreFilters')}>
+              {!isSaved && (
+                <div>
+                  <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-soft dark:text-dusk-soft">
+                    {t('collection.savedFilter')}
+                  </h2>
+                  <Chip active={favoriteOnly} onClick={() => setParam('fav', favoriteOnly ? null : '1')}>
+                    <IconBookmark filled={favoriteOnly} className="h-3.5 w-3.5" /> {t('collection.favorites')}
+                  </Chip>
+                </div>
+              )}
+              <div>
+                <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-soft dark:text-dusk-soft">
+                  {t('collection.filterByCategory')}
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  {categories.map((c) => (
+                    <Chip key={c.id} active={categoryFilter === c.id}
+                      onClick={() => setParam('cat', categoryFilter === c.id ? null : c.id)}>
+                      {c.icon} {categoryDisplayName(c, i18n.language)}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-soft dark:text-dusk-soft">
+                  {t('collection.filterByReason')}
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  {SAVE_REASONS.map((r) => (
+                    <Chip key={r} active={reasonFilter === r}
+                      onClick={() => setParam('reason', reasonFilter === r ? null : r)}>
+                      {t(`reasons.${r}`)}
+                    </Chip>
+                  ))}
+                </div>
+              </div>
+              {allTags.length > 0 && (
+                <div>
+                  <h2 className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-ink-soft dark:text-dusk-soft">
+                    {t('collection.filterByTag')}
+                  </h2>
+                  <div className="flex flex-wrap gap-2">
+                    {allTags.slice(0, 12).map((tag) => (
+                      <Chip key={tag} active={tagFilter === tag}
+                        onClick={() => setParam('tag', tagFilter === tag ? null : tag)}>
+                        #{tag}
+                      </Chip>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </section>
+          )}
+
+          <div className="mt-2 flex justify-end">
             <label className="text-sm text-ink-soft dark:text-dusk-soft">
               <select
                 value={sort}
@@ -109,31 +176,47 @@ export function CollectionPage({ invoicesOnly = false }: { invoicesOnly?: boolea
       )}
 
       <div className="mt-4 space-y-3">
-        {invoicesOnly && records && visible.length === 0 && <p className="py-8 text-center text-sm">{t('invoice.empty')}</p>}
-        {records && visible.length === 0 && records.length === 0 ? (
-          <div className="flex flex-col items-center gap-6 px-6 py-20 text-center">
-            <div className="flex h-20 w-20 items-center justify-center rounded-full bg-terracotta-soft text-terracotta dark:bg-dusk-line/60 dark:text-dusk-ink">
-              <ReceiptText className="h-9 w-9" strokeWidth={1.6} aria-hidden />
-            </div>
-            <p className="text-lg text-ink-soft dark:text-dusk-soft">{t('collection.empty')}</p>
-            <button
-              type="button"
-              onClick={() => navigate('/add')}
-              className="min-h-12 rounded-2xl bg-gradient-to-b from-terracotta to-terracotta-deep px-6 py-3 font-semibold text-paper shadow-lg shadow-terracotta/25 transition-transform active:scale-95 hover:brightness-105"
-            >
-              {t('collection.emptyCta')}
-            </button>
-          </div>
+        {records && visible.length === 0 ? (
+          <EmptyState
+            kind={isSaved ? 'saved' : 'invoices'}
+            title={
+              hasNarrowingFilters
+                ? t('collection.noFilteredTitle')
+                : isSaved
+                  ? t('collection.savedEmptyTitle')
+                  : t('collection.emptyTitle')
+            }
+            body={
+              hasNarrowingFilters
+                ? t('collection.noFilteredBody')
+                : isSaved
+                  ? t('collection.savedEmptyBody')
+                  : t('collection.empty')
+            }
+            action={
+              <button
+                type="button"
+                onClick={() => hasNarrowingFilters ? clearFilters() : navigate(isSaved ? '/' : '/add')}
+                className="btn-cobalt min-h-12 rounded-2xl px-6 py-3 text-base font-semibold transition-transform active:scale-95 hover:brightness-110"
+              >
+                {hasNarrowingFilters
+                  ? t('collection.clearFilters')
+                  : isSaved
+                    ? t('collection.browseInvoices')
+                    : t('collection.emptyCta')}
+              </button>
+            }
+          />
         ) : (
           <>
             {paged.map((rec) => (
-              <RecordCard key={rec.id} record={rec} categories={categories} defaultCurrency={defaultCurrency} invoiceView={invoicesOnly} />
+              <RecordCard key={rec.id} record={rec} categories={categories} defaultCurrency={defaultCurrency} invoiceView={invoiceMode} />
             ))}
             {hasMore && (
               <button
                 type="button"
                 onClick={loadMore}
-                className="min-h-11 w-full rounded-xl border border-line py-2.5 text-sm text-ink-soft dark:border-dusk-line dark:text-dusk-soft"
+                className="glass-soft min-h-11 w-full rounded-xl py-2.5 text-sm text-ink-soft dark:text-dusk-soft"
               >
                 {t('collection.loadMore')}
               </button>

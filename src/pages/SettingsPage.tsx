@@ -62,7 +62,7 @@ function Modal({
         aria-label={title}
         tabIndex={-1}
         onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-sm rounded-2xl bg-paper-raised p-4 shadow-xl ring-1 ring-line outline-none focus-visible:ring-terracotta dark:bg-dusk-raised dark:ring-dusk-line"
+        className="glass-deep w-full max-w-sm rounded-[24px] p-4 outline-none focus-visible:ring-2 focus-visible:ring-cobalt/40"
       >
         <h3 className="mb-3 font-semibold">{title}</h3>
         {children}
@@ -80,17 +80,17 @@ function ToggleRow<A extends string>({
   labels: (v: A) => string
 }) {
   return (
-    <div className="flex overflow-hidden rounded-xl border border-line dark:border-dusk-line">
+    <div className="flex gap-1 rounded-xl bg-paper-raised/45 p-1 shadow-[inset_0_0_0_1px_var(--hairline)] dark:bg-dusk/45">
       {options.map((opt) => (
         <button
           key={opt}
           type="button"
           onClick={() => onChange(opt)}
           aria-pressed={value === opt}
-          className={`min-h-11 flex-1 px-3 py-2 text-sm font-medium transition-colors ${
+          className={`min-h-10 flex-1 rounded-lg px-3 py-2 text-sm transition-all active:scale-[0.98] ${
             value === opt
-              ? 'bg-terracotta font-semibold text-paper shadow-sm shadow-terracotta/25'
-              : 'bg-transparent text-ink-soft hover:bg-terracotta-soft/50 dark:text-dusk-soft dark:hover:bg-dusk-line/50'
+              ? 'btn-cobalt font-semibold'
+              : 'text-ink-soft hover:bg-paper-raised/70 dark:text-dusk-soft dark:hover:bg-dusk-raised/70'
           }`}
         >
           {labels(opt)}
@@ -244,7 +244,7 @@ export function SettingsPage() {
                   aria-invalid={currencyError || undefined}
                 />
                 {currencyError && (
-                  <p className="mt-1 text-xs text-red-600 dark:text-red-400">{t('settings.invalidCurrency')}</p>
+                  <p className="mt-1 text-xs text-signal-600 dark:text-signal-300">{t('settings.invalidCurrency')}</p>
                 )}
               </div>
             )}
@@ -292,7 +292,7 @@ export function SettingsPage() {
                 />
               </div>
               {rateError && (
-                <p className="mt-1 text-xs text-red-600 dark:text-red-400">{t('settings.invalidRate')}</p>
+                <p className="mt-1 text-xs text-signal-600 dark:text-signal-300">{t('settings.invalidRate')}</p>
               )}
             </Field>
             <GhostButton onClick={() => void saveManualRate()} className="shrink-0 whitespace-nowrap">
@@ -468,7 +468,7 @@ export function SettingsPage() {
         <Modal title={t('settings.deleteCategoryConfirm', { name: deleteTarget.label })} onClose={() => setDeleteTarget(null)}>
           <div className="mt-4 flex gap-3">
             <GhostButton
-              className="flex-1 border-red-300 text-red-600 dark:border-red-900"
+              className="flex-1 text-signal-600 shadow-[inset_0_0_0_1px_var(--color-signal-300)] dark:text-signal-300 dark:shadow-[inset_0_0_0_1px_var(--color-signal-900)]"
               onClick={() => {
                 void deleteCategory(deleteTarget.id)
                 setDeleteTarget(null)

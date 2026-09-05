@@ -35,7 +35,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
           <div
             key={t.id}
             role="status"
-            className="animate-toast-in flex max-w-full items-center gap-3 rounded-full bg-ink/95 py-2.5 pl-4 pr-2.5 text-center text-sm font-medium text-paper shadow-xl shadow-ink/20 ring-1 ring-white/10 backdrop-blur dark:bg-paper/95 dark:text-ink dark:shadow-black/40"
+            className="glass-deep animate-toast-in flex max-w-full items-center gap-3 rounded-full py-2.5 pl-4 pr-2.5 text-center text-sm font-medium text-ink dark:text-dusk-ink"
           >
             <span className="pointer-events-none">{t.text}</span>
             {t.action && (
@@ -45,7 +45,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
                   t.action!.onClick()
                   setToasts((all) => all.filter((m) => m.id !== t.id))
                 }}
-                className="shrink-0 rounded-full bg-paper/20 px-3 py-1 text-xs font-semibold text-paper active:scale-95 dark:bg-ink/10 dark:text-ink"
+                className="shrink-0 rounded-full bg-cobalt-soft px-3 py-1 text-xs font-semibold text-cobalt active:scale-95 dark:bg-cobalt-lift/15 dark:text-cobalt-lift"
               >
                 {t.action.label}
               </button>

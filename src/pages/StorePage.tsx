@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router-dom'
+import { EmptyState } from '../components/EmptyState'
 import { RecordCard } from '../components/RecordCard'
 import { PageHeader, SectionCard } from '../components/ui'
 import { merchantStats, itemKey, priceHistory } from '../lib/analytics'
@@ -42,22 +43,22 @@ export function StorePage() {
       <PageHeader title={decoded || t('store.title')} onBack={() => history.back()} />
 
       {stats.visits === 0 ? (
-        <p className="px-6 py-16 text-center text-ink-soft dark:text-dusk-soft">{t('store.empty')}</p>
+        <EmptyState kind="store" title={t('store.emptyTitle')} body={t('store.empty')} />
       ) : (
         <>
           <div className="mt-4 grid grid-cols-3 gap-2 text-center">
-            <div className="rounded-xl bg-paper-raised p-2.5 ring-1 ring-line dark:bg-dusk-raised dark:ring-dusk-line">
+            <div className="glass-soft rounded-2xl p-2.5">
               <p className="text-xs text-ink-soft dark:text-dusk-soft">{t('store.visits', { count: stats.visits })}</p>
             </div>
-            <div className="rounded-xl bg-paper-raised p-2.5 ring-1 ring-line dark:bg-dusk-raised dark:ring-dusk-line">
+            <div className="glass-soft rounded-2xl p-2.5">
               <p className="text-xs text-ink-soft dark:text-dusk-soft">{t('store.totalSpend')}</p>
-              <p className="text-sm font-semibold tabular-nums">
+              <p className="font-display text-sm font-bold tabular-nums">
                 {formatMoney(Math.round(stats.total * 100) / 100, defaultCurrency, i18n.language)}
               </p>
             </div>
-            <div className="rounded-xl bg-paper-raised p-2.5 ring-1 ring-line dark:bg-dusk-raised dark:ring-dusk-line">
+            <div className="glass-soft rounded-2xl p-2.5">
               <p className="text-xs text-ink-soft dark:text-dusk-soft">{t('store.avgPerVisit')}</p>
-              <p className="text-sm font-semibold tabular-nums">
+              <p className="font-display text-sm font-bold tabular-nums">
                 {formatMoney(Math.round(stats.avgPerVisit * 100) / 100, defaultCurrency, i18n.language)}
               </p>
             </div>
@@ -68,7 +69,7 @@ export function StorePage() {
           )}
 
           {stats.topItems.length > 0 && (
-            <SectionCard title={t('store.topItems')}>
+            <SectionCard title={t('store.topItems')} className="mt-4">
               <ul className="space-y-2">
                 {stats.topItems.map((it) => {
                   const key = encodeURIComponent(itemKey({ id: 'k', name: it.name }))
@@ -76,7 +77,7 @@ export function StorePage() {
                     <li key={it.name} className="flex items-center gap-2">
                       <Link
                         to={`/product/${key}`}
-                        className="flex min-h-11 min-w-0 flex-1 items-center justify-between rounded-xl bg-paper px-3 py-2 text-sm ring-1 ring-line transition-all active:scale-[0.99] dark:bg-dusk dark:ring-dusk-line"
+                        className="glass-soft flex min-h-11 min-w-0 flex-1 items-center justify-between rounded-xl px-3 py-2 text-sm transition-all active:scale-[0.99]"
                       >
                         <span className="truncate">{it.name}</span>
                         <span className="shrink-0 text-xs text-ink-soft dark:text-dusk-soft">×{it.count}</span>
@@ -85,7 +86,7 @@ export function StorePage() {
                         type="button"
                         onClick={() => addToList(it.name)}
                         aria-label={`${t('list.addToList')}: ${it.name}`}
-                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-ink-soft ring-1 ring-line transition-colors active:scale-95 dark:text-dusk-soft dark:ring-dusk-line"
+                        className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-cobalt-soft font-semibold text-cobalt transition-all active:scale-95 dark:bg-cobalt-lift/15 dark:text-cobalt-lift"
                       >
                         +
                       </button>
@@ -96,7 +97,7 @@ export function StorePage() {
             </SectionCard>
           )}
 
-          <SectionCard title={t('store.recent')}>
+          <SectionCard title={t('store.recent')} className="mt-4">
             <div className="space-y-3">
               {stats.receipts.map((rec) => (
                 <RecordCard key={rec.id} record={rec} categories={[]} defaultCurrency={defaultCurrency} />
